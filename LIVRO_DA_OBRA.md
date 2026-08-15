@@ -153,3 +153,19 @@ perdidos e zero erros. Após a experiência, a RTX 3060 declarou 11071 MiB livre
 **Limite conhecido:** demonstrou-se o meio CUDA isolado, não o servidor ublk.
 Nenhum privilégio, bloco, `fio` ou `swap` participou. A terceira porta está
 verde. **Q.E.D.**
+
+## § XII. DA SOLEIRA DO BLOCO
+
+Installaram-se `liburing 2.9` e `ublksrv 1.8` somente em
+`~/.local/ublk-stack`. O servidor real foi ligado a ellas e ao CUDA 12.9 sob
+C11, conservando `-Wall`, `-Wextra`, `-Wpedantic` e `-Werror` para a lavra da
+casa. Todas as bibliotecas requeridas foram resolvidas.
+
+O núcleo contém `ublk_drv`, mas o módulo não está carregado e
+`/dev/ublk-control` não existe. Publicar o pequeno bloco exige que o Geometra
+execute `sudo modprobe ublk_drv`; nenhuma senha será pedida, recebida ou
+guardada por esta obra.
+
+**Limite conhecido:** nenhum dispositivo foi creado e nenhum octeto foi
+exposto à camada de blocos. `fio`, formatação, montagem e `swap` continuam
+prohibidos nesta porta. A quarta porta permanece em curso. **Q.E.D.**

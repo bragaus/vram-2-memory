@@ -45,12 +45,9 @@ ou escripta pela BAR; ReBAR, DAX, NUMA e FUSE não pertencem a esta demonstraç�
 ## § IV. DO ESTADO PRESENTE — onde repousa a penna
 
 A configuração, o meio simulado, as filas ublk e o caminho CUDA acham-se
-escriptos. Cada fila possue corrente própria; cada etiqueta recebe memória CPU
-fixada; leitura e escripta atravessam `cudaMemcpyAsync` antes da conclusão.
-
-Por ordem do Geometra, nenhuma parcela posterior ao contracto inicial foi
-compilada ou executada nesta machina. São conjecturas inspeccionadas, não factos
-experimentados; consulte-se `LIVRO_DA_OBRA.md` antes de confiar-lhes um octeto.
+escriptos. O simulador e a passagem CUDA foram provados; o servidor real foi
+compilado com `ublksrv 1.8`, mas ainda não publicou dispositivo algum. Consulte-se
+`LIVRO_DA_OBRA.md` antes de confiar-lhe um octeto.
 
 ## § V. DO OBSERVATORIO — comandos reservados á futura experiência
 
@@ -58,7 +55,10 @@ Requerem-se `libublksrv`, cabeçalhos CUDA, `cudart`, uma GPU e permissão para
 fixar memória. A construção real, quando novamente consentida, será:
 
 ```text
-make preparar_cuda DIRECTORIO_DO_CUDA=/usr/local/cuda
+PKG_CONFIG_PATH=$HOME/.local/ublk-stack/lib/pkgconfig \
+make preparar_cuda DIRECTORIO_DO_CUDA=$HOME/.local/cuda-12.9
+sudo modprobe ublk_drv
+LD_LIBRARY_PATH=$HOME/.local/ublk-stack/lib \
 sudo ./construcao/vram-2-memory 1073741824 1 64 1048576 5000 0
 ```
 

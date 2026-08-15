@@ -124,3 +124,40 @@ int colher_retrato_do_observatorio(
     *retrato = figura;
     return 1;
 }
+
+/*
+ * Proposito: produzir o incremento observado entre duas épocas.
+ * Pre-condições: ponteiros válidos, relógio e contadores não regressivos.
+ * Effeitos: conserva grandezas instantâneas e subtrai somente accumulos.
+ * Retorno: unidade no êxito e zero sem tocar o destino na recusa.
+ * Razão: toda subtracção é precedida pela prova de sua ordem.
+ */
+int differenciar_retratos_do_observatorio(
+    struct retrato_do_observatorio *differenca,
+    const struct retrato_do_observatorio *actual,
+    const struct retrato_do_observatorio *anterior)
+{
+    struct retrato_do_observatorio figura;
+
+    if (differenca == 0 || actual == 0 || anterior == 0 ||
+        actual->instante_monotonico_em_nanossegundos <
+            anterior->instante_monotonico_em_nanossegundos ||
+        actual->bytes_lidos < anterior->bytes_lidos ||
+        actual->bytes_escriptos < anterior->bytes_escriptos ||
+        actual->operacoes_concluidas < anterior->operacoes_concluidas ||
+        actual->erros < anterior->erros ||
+        actual->prazos_expirados < anterior->prazos_expirados ||
+        actual->amostras_perdidas < anterior->amostras_perdidas) return 0;
+    figura = *actual;
+    figura.duracao_da_janella_em_nanossegundos =
+        actual->instante_monotonico_em_nanossegundos -
+        anterior->instante_monotonico_em_nanossegundos;
+    figura.bytes_lidos -= anterior->bytes_lidos;
+    figura.bytes_escriptos -= anterior->bytes_escriptos;
+    figura.operacoes_concluidas -= anterior->operacoes_concluidas;
+    figura.erros -= anterior->erros;
+    figura.prazos_expirados -= anterior->prazos_expirados;
+    figura.amostras_perdidas -= anterior->amostras_perdidas;
+    *differenca = figura;
+    return 1;
+}

@@ -212,3 +212,24 @@ int escrever_meio_cuda(struct transportador_cuda *transportador,
                         transportador->corrente) != cudaSuccess) return 0;
     return cudaStreamSynchronize(transportador->corrente) == cudaSuccess;
 }
+
+/*
+ * COROLLARIO DA REGIAO CUDA NULA
+ * Proposito: apagar região de VRAM sem reservar memória intermediária.
+ * Pre-condições: transportador vivo e região contida.
+ * Effeitos: submette cudaMemsetAsync e synchroniza a corrente.
+ * Retorno: unidade somente se submissão e termo alcançam êxito.
+ * Razão: descarte e zero explícito convergem no meio volátil.
+ */
+int zerar_meio_cuda(struct transportador_cuda *transportador,
+                    uint64_t deslocamento, uint32_t quantidade_de_bytes)
+{
+    if (!regiao_cuda_e_valida(
+            transportador, deslocamento, quantidade_de_bytes)) return 0;
+    if (cudaSetDevice(transportador->meio->indice_da_gpu) != cudaSuccess ||
+        cudaMemsetAsync(transportador->meio->memoria_da_gpu +
+                            (size_t)deslocamento,
+                        0, (size_t)quantidade_de_bytes,
+                        transportador->corrente) != cudaSuccess) return 0;
+    return cudaStreamSynchronize(transportador->corrente) == cudaSuccess;
+}

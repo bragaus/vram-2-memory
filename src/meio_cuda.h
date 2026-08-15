@@ -83,4 +83,13 @@ int escrever_meio_cuda(struct transportador_cuda *transportador,
                        uint64_t deslocamento, const void *origem,
                        uint32_t quantidade_de_bytes);
 
+/*
+ * Proposito: reduzir a zero uma região da VRAM pela corrente da fila.
+ * Pre-condições: transportador vivo e intervallo contido.
+ * Effeitos: submette cudaMemsetAsync e espera. Retorno: unidade ou zero.
+ * Razão: descarte não reclama buffer CPU nem abandona dados recuperáveis.
+ */
+int zerar_meio_cuda(struct transportador_cuda *transportador,
+                    uint64_t deslocamento, uint32_t quantidade_de_bytes);
+
 #endif

@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <errno.h>
 
 /*
  * Proposito: demonstrar limites, proporção e terminação das figuras breves.
@@ -28,6 +29,34 @@ static int provar_figuras_breves(void)
 }
 
 /*
+ * Proposito: demonstrar colheita atomica, differença e recusa da regressão.
+ * Pre-condições: nenhuma; os dois ábacos principiam zerados.
+ * Effeitos: somente atomos locaes são incrementados.
+ * Retorno: unidade quando números e cercas coincidem, zero na divergência.
+ * Razão: o monitor deve mostrar a janella real e não um accumulo enganoso.
+ */
+static int provar_retrato_e_regressao(void)
+{
+    struct contadores_da_fila filas[2] = {0};
+    struct retrato_do_observatorio actual, anterior = {0}, janella = {0};
+
+    registrar_operacao_observada(&filas[0], 0, 4096, 1000, 0);
+    registrar_operacao_observada(&filas[1], 1, 8192, 5000, -ETIMEDOUT);
+    anterior.instante_monotonico_em_nanossegundos = 100;
+    if (!colher_retrato_do_observatorio(&actual, filas, 2, 200, 100) ||
+        !differenciar_retratos_do_observatorio(
+            &janella, &actual, &anterior)) return 0;
+    if (janella.bytes_lidos != 4096 || janella.bytes_escriptos != 8192 ||
+        janella.operacoes_concluidas != 2 || janella.erros != 1 ||
+        janella.prazos_expirados != 1 ||
+        janella.duracao_da_janella_em_nanossegundos != 100) return 0;
+    anterior = actual;
+    actual.bytes_lidos--;
+    return !differenciar_retratos_do_observatorio(
+        &janella, &actual, &anterior);
+}
+
+/*
  * Proposito: reunir as demonstrações do observatório num resultado exterior.
  * Pre-condições: nenhuma. Effeitos: nenhum além do código de saída.
  * Retorno: zero se todas as proposições resistem, unidade na primeira queda.
@@ -35,5 +64,5 @@ static int provar_figuras_breves(void)
  */
 int main(void)
 {
-    return provar_figuras_breves() ? 0 : 1;
+    return provar_figuras_breves() && provar_retrato_e_regressao() ? 0 : 1;
 }

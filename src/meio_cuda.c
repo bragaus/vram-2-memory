@@ -135,3 +135,18 @@ void *reservar_memoria_intermediaria_cuda(uint32_t quantidade_de_bytes)
     }
     return memoria;
 }
+
+/*
+ * COROLLARIO DA RESTITUICAO INTERMEDIARIA
+ * Proposito: devolver á execução CUDA uma região CPU fixada.
+ * Pre-condições: endereço nasceu de cudaHostAlloc ou é nulo.
+ * Effeitos: chama cudaFreeHost. Retorno: unidade ou zero na recusa.
+ * Razão: o nulo não representa posse e, portanto, já está restituído.
+ */
+int destruir_memoria_intermediaria_cuda(void *memoria)
+{
+    if (memoria == 0) {
+        return 1;
+    }
+    return cudaFreeHost(memoria) == cudaSuccess;
+}

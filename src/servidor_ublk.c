@@ -130,7 +130,7 @@ int configurar_parametros_ublk(struct estado_do_servidor_ublk *servidor)
 
     if (servidor == 0 || servidor->controle == 0) return -EINVAL;
     parametros.len = sizeof(parametros);
-    parametros.types = UBLK_PARAM_TYPE_BASIC;
+    parametros.types = UBLK_PARAM_TYPE_BASIC | UBLK_PARAM_TYPE_DISCARD;
     parametros.basic.attrs = UBLK_ATTR_VOLATILE_CACHE;
     parametros.basic.logical_bs_shift = 12;
     parametros.basic.physical_bs_shift = 12;
@@ -140,6 +140,13 @@ int configurar_parametros_ublk(struct estado_do_servidor_ublk *servidor)
         servidor->configuracao->maior_operacao_em_bytes >> 9;
     parametros.basic.dev_sectors =
         servidor->configuracao->capacidade_em_bytes >> 9;
+    parametros.discard.discard_alignment = TAMANHO_DO_BLOCO_EM_BYTES;
+    parametros.discard.discard_granularity = TAMANHO_DO_BLOCO_EM_BYTES;
+    parametros.discard.max_discard_sectors =
+        servidor->configuracao->maior_operacao_em_bytes >> 9;
+    parametros.discard.max_write_zeroes_sectors =
+        servidor->configuracao->maior_operacao_em_bytes >> 9;
+    parametros.discard.max_discard_segments = 1;
     return ublksrv_ctrl_set_params(servidor->controle, &parametros);
 }
 

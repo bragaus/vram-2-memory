@@ -70,9 +70,11 @@ static void *observar_servidor_ublk(void *argumento)
     struct estado_do_servidor_ublk *servidor = argumento;
     struct retrato_do_observatorio retrato, anterior = {0}, janella;
     struct configuracao_do_monitor configuracao;
+    struct configuracao_da_narracao configuracao_da_voz;
     const struct timespec repouso = {1, 0};
     uint64_t instante_anterior = ler_instante_monotonico();
     char quadro[2048];
+    char voz[256];
 
     while (!atomic_load_explicit(&servidor->ordenar_termo_do_observatorio,
                                  memory_order_relaxed)) {
@@ -101,6 +103,19 @@ static void *observar_servidor_ublk(void *argumento)
             quadro, sizeof(quadro), &janella, &configuracao);
         escriptos = tamanho == 0 ? -1 :
             write(STDERR_FILENO, quadro, tamanho);
+        if (escriptos < 0 || (size_t)escriptos != tamanho)
+            atomic_fetch_add_explicit(&servidor->contadores[0].amostras_perdidas,
+                                      1, memory_order_relaxed);
+        configuracao_da_voz.modo = configuracao.empregar_cor ?
+            MODO_DA_NARRACAO_THEATRAL : MODO_DA_NARRACAO_SOBRIO;
+        configuracao_da_voz.idade_maxima_em_nanossegundos = 2000000000ULL;
+        configuracao_da_voz.p99_alarmante_em_microssegundos =
+            (uint64_t)servidor->configuracao
+                ->prazo_da_operacao_em_milissegundos * 1000ULL;
+        tamanho = narrar_observador_de_si(
+            voz, sizeof(voz), &janella, &configuracao_da_voz, instante_actual);
+        escriptos = tamanho == SIZE_MAX ? -1 :
+            write(STDERR_FILENO, voz, tamanho);
         if (escriptos < 0 || (size_t)escriptos != tamanho)
             atomic_fetch_add_explicit(&servidor->contadores[0].amostras_perdidas,
                                       1, memory_order_relaxed);

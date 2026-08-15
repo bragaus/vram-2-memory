@@ -44,7 +44,7 @@ somente quando a passagem conserva a ordem fixada no tractado technico.
 
 | Confirmação | Proposição | Prova |
 |---|---|---|
-| `c27eecb` | Proêmio público | revisão integral de 50 linhas |
-| `3782567` | Contracto dos estados | C11 com todos os avisos fataes |
+| `6f7190f` | Proêmio público | revisão integral de 50 linhas |
+| `75316ce` | Contracto dos estados | C11 com todos os avisos fataes |
 
 **Próximo corollário:** provar exhaustivamente a lei das transições. **Q.E.D.**

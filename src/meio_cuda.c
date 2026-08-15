@@ -57,3 +57,30 @@ int destruir_meio_cuda(struct meio_cuda *meio)
     meio->indice_da_gpu = 0;
     return 1;
 }
+
+/*
+ * THEOREMA DA CORRENTE EXCLUSIVA
+ * Proposito: preparar uma corrente não bloqueante para uma só fila.
+ * Pre-condições: transportador vazio e meio vivo.
+ * Effeitos: escolhe a GPU e adquire cudaStream_t.
+ * Retorno: unidade no êxito ou zero sem estado parcial.
+ * Razão: a corrente ordinária introduziria dependências entre filas irmãs.
+ */
+int criar_transportador_cuda(struct transportador_cuda *transportador,
+                             struct meio_cuda *meio)
+{
+    cudaStream_t corrente;
+
+    if (transportador == 0 || transportador->corrente != 0 || meio == 0 ||
+        meio->memoria_da_gpu == 0) {
+        return 0;
+    }
+    if (cudaSetDevice(meio->indice_da_gpu) != cudaSuccess ||
+        cudaStreamCreateWithFlags(&corrente, cudaStreamNonBlocking) !=
+            cudaSuccess) {
+        return 0;
+    }
+    transportador->meio = meio;
+    transportador->corrente = corrente;
+    return 1;
+}

@@ -150,3 +150,42 @@ int destruir_memoria_intermediaria_cuda(void *memoria)
     }
     return cudaFreeHost(memoria) == cudaSuccess;
 }
+
+/*
+ * LEMMA DA REGIAO CUDA
+ * Proposito: julgar limites sem somma susceptível a transbordar.
+ * Pre-condições: nenhuma. Effeitos: nenhum. Retorno: unidade ou zero.
+ * Razão: primeiro se ordena o deslocamento; depois se subtrahe a capacidade.
+ */
+static int regiao_cuda_e_valida(const struct transportador_cuda *transportador,
+                                uint64_t deslocamento, uint32_t quantidade)
+{
+    return transportador != 0 && transportador->meio != 0 &&
+           transportador->corrente != 0 && quantidade != 0 &&
+           deslocamento <= transportador->meio->capacidade_em_bytes &&
+           quantidade <=
+               transportador->meio->capacidade_em_bytes - deslocamento;
+}
+
+/*
+ * THEOREMA DA LEITURA POR DMA
+ * Proposito: mover região da VRAM para destino CPU fixado.
+ * Pre-condições: transportador vivo, destino fixado e região contida.
+ * Effeitos: submette cudaMemcpyAsync e synchroniza a corrente.
+ * Retorno: unidade somente se submissão e termo alcançam êxito.
+ * Razão: a conclusão posterior só poderá reutilizar buffer já preenchido.
+ */
+int ler_meio_cuda(struct transportador_cuda *transportador,
+                  uint64_t deslocamento, void *destino,
+                  uint32_t quantidade_de_bytes)
+{
+    if (destino == 0 || !regiao_cuda_e_valida(
+            transportador, deslocamento, quantidade_de_bytes)) return 0;
+    if (cudaSetDevice(transportador->meio->indice_da_gpu) != cudaSuccess ||
+        cudaMemcpyAsync(destino,
+                        transportador->meio->memoria_da_gpu +
+                            (size_t)deslocamento,
+                        (size_t)quantidade_de_bytes, cudaMemcpyDeviceToHost,
+                        transportador->corrente) != cudaSuccess) return 0;
+    return cudaStreamSynchronize(transportador->corrente) == cudaSuccess;
+}

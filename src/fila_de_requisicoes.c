@@ -78,3 +78,29 @@ struct registro_da_requisicao *iniciar_requisicao_na_fila(
     registro->estado = ESTADO_DA_REQUISICAO_TRANSFERINDO;
     return registro;
 }
+
+/*
+ * THEOREMA DA CONCLUSAO UNICA
+ * Proposito: publicar um resultado uma vez e restituir sua etiqueta.
+ * Pre-condições: fila viva, etiqueta contida e estado transferindo.
+ * Effeitos: passa a concluindo e conserva a etiqueta indisponível.
+ * Retorno: unidade na primeira conclusão e zero nas demais tentativas.
+ * Razão: só a posse activa alcança o umbral da entrega exterior.
+ */
+int concluir_requisicao_na_fila(struct fila_de_requisicoes *fila,
+                                uint32_t etiqueta, int resultado)
+{
+    struct registro_da_requisicao *registro;
+
+    if (fila == 0 || fila->registros == 0 ||
+        etiqueta >= fila->profundidade) {
+        return 0;
+    }
+    registro = &fila->registros[etiqueta];
+    if (registro->estado != ESTADO_DA_REQUISICAO_TRANSFERINDO) {
+        return 0;
+    }
+    registro->resultado = resultado;
+    registro->estado = ESTADO_DA_REQUISICAO_CONCLUINDO;
+    return 1;
+}

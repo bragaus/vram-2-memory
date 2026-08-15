@@ -157,10 +157,13 @@ int tratar_requisicao_ublk(const struct ublksrv_queue *fila_exterior,
     const struct ublksrv_io_desc *descritor;
     struct registro_da_requisicao *registro;
     uint64_t deslocamento;
+    uint64_t instante_final;
+    uint64_t latencia;
     uint32_t quantidade;
     uint8_t operacao;
     void *memoria;
     int resultado;
+    int resultado_da_entrega;
 
     if (fila_exterior == 0 || dados == 0 || dados->iod == 0) return -EINVAL;
     contexto = fila_exterior->private_data;
@@ -179,7 +182,14 @@ int tratar_requisicao_ublk(const struct ublksrv_queue *fila_exterior,
     if (registro == 0) return -EBUSY;
     resultado = transferir_requisicao_ublk(
         contexto, operacao, deslocamento, memoria, quantidade);
-    return entregar_requisicao_ublk(
+    instante_final = ler_instante_monotonico();
+    latencia = instante_final >= registro->instante_inicial_em_nanossegundos ?
+        instante_final - registro->instante_inicial_em_nanossegundos : 0;
+    resultado_da_entrega = entregar_requisicao_ublk(
         contexto, fila_exterior, (uint32_t)dados->tag, resultado,
-        ler_instante_monotonico());
+        instante_final);
+    registrar_operacao_observada(
+        contexto->contadores, operacao != UBLK_IO_OP_READ, quantidade,
+        latencia, resultado_da_entrega < 0 ? resultado_da_entrega : resultado);
+    return resultado_da_entrega;
 }

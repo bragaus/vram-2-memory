@@ -1,5 +1,7 @@
 #include "retrato_do_observatorio.h"
 
+#include <errno.h>
+
 /*
  * Proposito: situar uma demora num degrau logarithmico e finito.
  * Pre-condições: nenhuma; zero pertence ao primeiro degrau.
@@ -44,6 +46,9 @@ void registrar_operacao_observada(struct contadores_da_fila *contadores,
                               memory_order_relaxed);
     if (resultado < 0)
         atomic_fetch_add_explicit(&contadores->erros, 1, memory_order_relaxed);
+    if (resultado == -ETIMEDOUT)
+        atomic_fetch_add_explicit(&contadores->prazos_expirados, 1,
+                                  memory_order_relaxed);
 }
 
 /*

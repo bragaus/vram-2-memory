@@ -1,7 +1,9 @@
 #include "../src/monitor_do_observatorio.h"
 #include "../src/observador_de_si.h"
+#include "../src/meio_simulado.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 /*
@@ -31,6 +33,39 @@ static int apresentar_retrato(
            fwrite(voz, 1, tamanho_da_voz, stdout) == tamanho_da_voz;
 }
 
+/*
+ * Proposito: produzir tráfego real na RAM simulada e colher seus vestígios.
+ * Pre-condições: destino válido e vazio.
+ * Effeitos: reserva, escreve, lê, compara e restitue um meio de um MiB.
+ * Retorno: unidade com retrato completo ou zero depois da limpeza.
+ * Razão: números do palco devem nascer de octetos realmente peregrinados.
+ */
+static int simular_carga(struct retrato_do_observatorio *retrato)
+{
+    struct meio_simulado meio = {0};
+    struct contadores_da_fila contadores = {0};
+    const unsigned char origem[16] = "Geometria VRAM!";
+    unsigned char destino[16] = {0};
+    int resultado = 0;
+
+    if (retrato == 0 || !criar_meio_simulado(&meio, 1048576)) return 0;
+    if (!escrever_meio_simulado(&meio, 4096, origem, sizeof(origem))) goto termo;
+    registrar_operacao_observada(
+        &contadores, 1, sizeof(origem), 4000, 0);
+    if (!ler_meio_simulado(&meio, 4096, destino, sizeof(destino)) ||
+        memcmp(origem, destino, sizeof(origem)) != 0) goto termo;
+    registrar_operacao_observada(
+        &contadores, 0, sizeof(destino), 1000, 0);
+    if (!colher_retrato_do_observatorio(
+            retrato, &contadores, 1, 1000000000ULL, 0)) goto termo;
+    retrato->capacidade_em_bytes = meio.capacidade_em_bytes;
+    retrato->memoria_do_meio_reservada_em_bytes = meio.capacidade_em_bytes;
+    resultado = 1;
+termo:
+    destruir_meio_simulado(&meio);
+    return resultado;
+}
+
 int main(void)
 {
     struct retrato_do_observatorio retrato = {0};
@@ -38,12 +73,6 @@ int main(void)
         MODO_DA_NARRACAO_THEATRAL, 2000000000ULL, 1000
     };
 
-    retrato.instante_monotonico_em_nanossegundos = 1000000000ULL;
-    retrato.duracao_da_janella_em_nanossegundos = 1000000000ULL;
-    retrato.capacidade_em_bytes = 1048576;
-    retrato.memoria_do_meio_reservada_em_bytes = 524288;
-    retrato.bytes_lidos = 4096;
-    retrato.operacoes_concluidas = 1;
-    retrato.latencia_p99_em_microssegundos = 16;
+    if (!simular_carga(&retrato)) return 1;
     return apresentar_retrato(&retrato, &voz, 1000000000ULL) ? 0 : 1;
 }

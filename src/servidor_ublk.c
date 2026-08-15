@@ -558,11 +558,16 @@ int executar_servidor_com_meio(
     if (resultado == 0) {
         resultado = ublksrv_ctrl_start_dev(servidor.controle, getpid());
     }
+    if (resultado == 0) resultado = iniciar_observatorio_ublk(&servidor);
     if (resultado < 0) ublksrv_ctrl_stop_dev(servidor.controle);
     {
         int resultado_das_filas = recolher_filas_ublk(
             incumbencias, quantidade_iniciada);
         if (resultado == 0) resultado = resultado_das_filas;
+    }
+    {
+        int resultado_do_observatorio = encerrar_observatorio_ublk(&servidor);
+        if (resultado == 0) resultado = resultado_do_observatorio;
     }
     free(incumbencias);
     free(servidor.contadores);

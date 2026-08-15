@@ -6,6 +6,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <ublksrv.h>
+#include <ublksrv_utils.h>
 #include <unistd.h>
 
 /* O servidor reune a configuração, o meio e as duas faces do dispositivo. */

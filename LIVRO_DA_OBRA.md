@@ -13,9 +13,9 @@
 
 - `[✓]` Proêmio público: natureza volátil e caminho por DMA declarados.
 - `[✓]` Contracto dos estados: quatro posições e grandezas da requisição.
-- `[~]` Lei das transições: discernir cada passagem legítima entre estados.
-- `[ ]` Provas unitárias da lei das transições.
-- `[ ]` Configuração do apparelho e limites sem estouro.
+- `[✓]` Lei das transições: discernir cada passagem legítima entre estados.
+- `[✓]` Provas unitárias da lei das transições.
+- `[~]` Configuração do apparelho e limites sem estouro.
 - `[ ]` Meio simulado em RAM para as experiências sem GPU.
 - `[ ]` Filas ublk e conclusão única por etiqueta.
 - `[ ]` Meio CUDA e travessia real por DMA.
@@ -23,14 +23,8 @@
 
 ## § III. DA PROPOSIÇÃO IMMEDIATA
 
-Lavrar `src/estado_da_requisicao.c` com uma só funcção:
-
-```c
-int transicao_da_requisicao_e_valida(enum estado_da_requisicao origem, enum estado_da_requisicao destino);
-```
-
-A funcção será pura: não altera estado, não alloca memória e restitue unidade
-somente quando a passagem conserva a ordem fixada no tractado technico.
+Lavrar `src/configuracao.h`: fixar capacidade, filas, profundidade, maior
+operação e prazo, todos com grandezas explícitas e limites demonstráveis.
 
 ## § IV. DA REGRA DE PASSAGEM
 
@@ -47,4 +41,4 @@ somente quando a passagem conserva a ordem fixada no tractado technico.
 | `6f7190f` | Proêmio público | revisão integral de 50 linhas |
 | `75316ce` | Contracto dos estados | C11 com todos os avisos fataes |
 
-**Próximo corollário:** provar exhaustivamente a lei das transições. **Q.E.D.**
+**Próximo corollário:** cercar as grandezas da configuração. **Q.E.D.**

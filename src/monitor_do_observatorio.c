@@ -111,3 +111,53 @@ static int escrever_sensor(char *destino, size_t capacidade, int presente,
         snprintf(destino, capacidade, "IGNORO");
     return escriptos >= 0 && (size_t)escriptos < capacidade;
 }
+/*
+ * THEOREMA DO QUADRO HUMANO
+ * Proposito: reunir número, unidade e ornamento num painel finito.
+ * Pre-condições: argumentos válidos e retrato já consolidado.
+ * Effeitos: grava quadro terminado em zero sem texto exterior.
+ * Retorno: octetos visíveis ou zero se a obra não couber.
+ * Razão: uma única chamada dá ao quadro época indivisível.
+ */
+size_t escrever_quadro_do_observatorio(char *destino, size_t capacidade,
+    const struct retrato_do_observatorio *retrato,
+    const struct configuracao_do_monitor *configuracao)
+{
+    char regua[129], temperatura[32], potencia[32];
+    const char *cor, *fim_da_cor;
+    size_t largura; int escriptos;
+    uint64_t bytes, vazao, operacoes;
+    if (destino == 0 || retrato == 0 || configuracao == 0) return 0;
+    largura = configuracao->largura_em_colunas;
+    if (largura < 32) largura = 32;
+    if (largura > 120) largura = 120;
+    bytes = UINT64_MAX - retrato->bytes_lidos < retrato->bytes_escriptos ?
+        UINT64_MAX : retrato->bytes_lidos + retrato->bytes_escriptos;
+    if (!desenhar_regua_ascii(regua, sizeof(regua), bytes,
+            retrato->capacidade_em_bytes == 0 ? 1 : retrato->capacidade_em_bytes,
+            largura - 16) ||
+        !escrever_sensor(temperatura, sizeof(temperatura),
+            retrato->temperatura_da_gpu_presente,
+            retrato->temperatura_da_gpu_em_millicelsius, "mC") ||
+        !escrever_sensor(potencia, sizeof(potencia),
+            retrato->potencia_da_gpu_presente,
+            retrato->potencia_da_gpu_em_milliwatts, "mW")) return 0;
+    vazao = calcular_por_segundo(bytes,
+        retrato->duracao_da_janella_em_nanossegundos);
+    operacoes = calcular_por_segundo(retrato->operacoes_concluidas,
+        retrato->duracao_da_janella_em_nanossegundos);
+    cor = configuracao->empregar_cor ? "\033[36m" : "";
+    fim_da_cor = configuracao->empregar_cor ? "\033[0m" : "";
+    escriptos = snprintf(destino, capacidade,
+        "%s+-- OBSERVATORIO VRAM --+%s\n%s\nVazao: %" PRIu64
+        " B/s | Operacoes: %" PRIu64 "/s\nLatencia us: p50=%" PRIu64
+        " p95=%" PRIu64 " p99=%" PRIu64 "\nErros: %" PRIu64
+        " | Prazos: %" PRIu64 " | Perdidas: %" PRIu64
+        "\nGPU: temperatura=%s potencia=%s\n", cor, fim_da_cor, regua, vazao,
+        operacoes, retrato->latencia_p50_em_microssegundos,
+        retrato->latencia_p95_em_microssegundos,
+        retrato->latencia_p99_em_microssegundos, retrato->erros,
+        retrato->prazos_expirados, retrato->amostras_perdidas,
+        temperatura, potencia);
+    return escriptos < 0 || (size_t)escriptos >= capacidade ? 0 : (size_t)escriptos;
+}

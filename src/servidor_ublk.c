@@ -4,7 +4,9 @@
 #include <limits.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <ublksrv.h>
+#include <unistd.h>
 
 /* O servidor reune a configuração, o meio e as duas faces do dispositivo. */
 struct estado_do_servidor_ublk {
@@ -318,5 +320,53 @@ int preparar_servidor_ublk(struct estado_do_servidor_ublk *servidor,
     }
     resultado = configurar_parametros_ublk(servidor);
     if (resultado < 0) desmontar_servidor_ublk(servidor);
+    return resultado;
+}
+
+/*
+ * THEOREMA DO SERVICO UBLK
+ * Proposito: preparar, publicar, servir e desmontar o apparelho completo.
+ * Pre-condições: configuração julgada e libublksrv disponível.
+ * Effeitos: expõe bloco volátil até interrupção ou falha de fila.
+ * Retorno: zero no termo regular ou a primeira falha negativa.
+ * Razão: toda saída converge pela mesma successão inversa de limpeza.
+ */
+int executar_servidor_ublk(
+    const struct configuracao_do_apparelho *configuracao)
+{
+    struct estado_do_servidor_ublk servidor = {0};
+    struct incumbencia_da_fila_ublk *incumbencias;
+    uint32_t quantidade_iniciada = 0;
+    int resultado;
+    int resultado_do_desmonte;
+
+    resultado = preparar_servidor_ublk(&servidor, configuracao);
+    if (resultado < 0) return resultado;
+    incumbencias = calloc(
+        (size_t)configuracao->quantidade_de_filas, sizeof(*incumbencias));
+    if (incumbencias == 0) {
+        desmontar_servidor_ublk(&servidor);
+        return -ENOMEM;
+    }
+    if (signal(SIGINT, ordenar_parada_do_servidor_ublk) == SIG_ERR ||
+        signal(SIGTERM, ordenar_parada_do_servidor_ublk) == SIG_ERR) {
+        free(incumbencias);
+        desmontar_servidor_ublk(&servidor);
+        return -errno;
+    }
+    resultado = iniciar_filas_ublk(
+        &servidor, incumbencias, &quantidade_iniciada);
+    if (resultado == 0) {
+        resultado = ublksrv_ctrl_start_dev(servidor.controle, getpid());
+    }
+    if (resultado < 0) ublksrv_ctrl_stop_dev(servidor.controle);
+    {
+        int resultado_das_filas = recolher_filas_ublk(
+            incumbencias, quantidade_iniciada);
+        if (resultado == 0) resultado = resultado_das_filas;
+    }
+    free(incumbencias);
+    resultado_do_desmonte = desmontar_servidor_ublk(&servidor);
+    if (resultado == 0) resultado = resultado_do_desmonte;
     return resultado;
 }

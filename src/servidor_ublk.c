@@ -1,6 +1,7 @@
 #include "servidor_ublk.h"
 #include "alvo_ublk.h"
 #include "monitor_do_observatorio.h"
+#include "observador_de_si.h"
 #include <errno.h>
 #include <limits.h>
 #include <pthread.h>

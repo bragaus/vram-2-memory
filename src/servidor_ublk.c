@@ -25,6 +25,7 @@ struct incumbencia_da_fila_ublk {
     struct estado_do_servidor_ublk *servidor;
     struct fila_de_requisicoes fila;
     struct contexto_da_fila_ublk contexto;
+    struct contadores_da_fila contadores;
     struct transportador_cuda transportador_cuda;
     pthread_t fio_de_execucao;
     unsigned short indice;
@@ -79,6 +80,7 @@ void *servir_fila_ublk(void *argumento)
         return argumento;
     }
     incumbencia->contexto.fila = &incumbencia->fila;
+    incumbencia->contexto.contadores = &incumbencia->contadores;
     if (incumbencia->servidor->empregar_cuda) {
         incumbencia->contexto.transportador_cuda =
             &incumbencia->transportador_cuda;

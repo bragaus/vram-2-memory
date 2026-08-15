@@ -77,7 +77,12 @@ void *servir_fila_ublk(void *argumento)
         return argumento;
     }
     incumbencia->contexto.fila = &incumbencia->fila;
-    incumbencia->contexto.meio_simulado = &incumbencia->servidor->meio;
+    if (incumbencia->servidor->empregar_cuda) {
+        incumbencia->contexto.transportador_cuda =
+            &incumbencia->transportador_cuda;
+    } else {
+        incumbencia->contexto.meio_simulado = &incumbencia->servidor->meio;
+    }
     incumbencia->contexto.prazo_em_nanossegundos =
         (uint64_t)incumbencia->servidor->configuracao
             ->prazo_da_operacao_em_milissegundos * 1000000ULL;
@@ -85,6 +90,7 @@ void *servir_fila_ublk(void *argumento)
         incumbencia->servidor->dispositivo, incumbencia->indice,
         &incumbencia->contexto);
     if (fila_exterior == 0) {
+        destruir_transportador_cuda(&incumbencia->transportador_cuda);
         destruir_fila_de_requisicoes(&incumbencia->fila);
         incumbencia->resultado = -ENODEV;
         return argumento;
@@ -101,6 +107,10 @@ void *servir_fila_ublk(void *argumento)
         ublksrv_ctrl_stop_dev(incumbencia->servidor->controle);
     }
     ublksrv_queue_deinit(fila_exterior);
+    if (!destruir_transportador_cuda(&incumbencia->transportador_cuda) &&
+        incumbencia->resultado == 0) {
+        incumbencia->resultado = -EIO;
+    }
     destruir_fila_de_requisicoes(&incumbencia->fila);
     return argumento;
 }
@@ -155,9 +165,15 @@ int iniciar_filas_ublk(struct estado_do_servidor_ublk *servidor,
             &incumbencias[*quantidade_iniciada];
         incumbencia->servidor = servidor;
         incumbencia->indice = (unsigned short)*quantidade_iniciada;
+        if (servidor->empregar_cuda &&
+            !criar_transportador_cuda(&incumbencia->transportador_cuda,
+                                      &servidor->meio_cuda)) {
+            return -EIO;
+        }
         resultado = pthread_create(&incumbencia->fio_de_execucao, 0,
                                    servir_fila_ublk, incumbencia);
         if (resultado != 0) {
+            destruir_transportador_cuda(&incumbencia->transportador_cuda);
             return -resultado;
         }
         (*quantidade_iniciada)++;

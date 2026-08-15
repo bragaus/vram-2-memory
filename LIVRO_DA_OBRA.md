@@ -15,11 +15,11 @@
 - `[✓]` Contracto dos estados: quatro posições e grandezas da requisição.
 - `[✓]` Lei das transições: discernir cada passagem legítima entre estados.
 - `[✓]` Provas unitárias da lei das transições.
-- `[!]` Configuração e prova escriptas; execução suspensa por ordem do Geometra.
-- `[ ]` Meio simulado em RAM para as experiências sem GPU.
-- `[ ]` Filas ublk e conclusão única por etiqueta.
-- `[ ]` Meio CUDA e travessia real por DMA.
-- `[ ]` Endurecimento para pressão de memória e emprego como swap.
+- `[!]` Configuração e prova escriptas; execução suspensa pelo Geometra.
+- `[!]` Meio simulado e prova byte a byte escriptos; execução suspensa.
+- `[!]` Filas ublk e conclusão única escriptas; execução suspensa.
+- `[!]` Meio CUDA e travessia DMA escriptos; execução suspensa.
+- `[!]` Pressão, `fio` e `swap` preparados; execução destructiva suspensa.
 
 ## § III. DA PROPOSIÇÃO IMMEDIATA
 
@@ -43,6 +43,11 @@ machina até que o Geometra restitua licença às experiências.
 | `bfbffc1` | Limites da configuração | execução suspensa por ordem exterior |
 | `b76b7f8` | Prova escripta dos limites | execução suspensa por ordem exterior |
 | `44185eb` | Receita das demonstrações | comando `make provar`, não executado |
+| `d881eac` | Meio simulado e sua prova | artefactos não executados |
+| `1252e74` | Servidor ublk e etiquetas singulares | construção não executada |
+| `7f75932` | VRAM, DMA e prova CUDA | GPU não experimentada |
+| `b2c59dd` | Rito de pressão e swap | prova destructiva não executada |
+| `f755de7` | Observatório público | comandos apenas documentados |
 
 **Limite conhecido:** nenhuma prova posterior a `75316ce` foi executada nesta
 machina. A penna avança às cegas sem converter conjectura em facto. **Q.E.D.**

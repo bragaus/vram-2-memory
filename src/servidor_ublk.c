@@ -228,6 +228,26 @@ const struct ublksrv_tgt_type *obter_operacoes_do_alvo_ublk(void)
 }
 
 /*
+ * COROLLARIO DAS OPERACOES CUDA
+ * Proposito: acrescentar buffers fixados á passagem commum das requisições.
+ * Pre-condições: execução CUDA disponível antes de iniciar as filas.
+ * Effeitos: nenhum. Retorno: endereço immutável da taboa CUDA.
+ * Razão: somente esta variante promette DMA e por isso fixa seus buffers.
+ */
+const struct ublksrv_tgt_type *obter_operacoes_do_alvo_cuda(void)
+{
+    static const struct ublksrv_tgt_type operacoes = {
+        .name = "vram_2_memory_cuda",
+        .init_tgt = inicializar_alvo_ublk,
+        .handle_io_async = tratar_requisicao_ublk,
+        .alloc_io_buf = reservar_buffer_ublk_cuda,
+        .free_io_buf = destruir_buffer_ublk_cuda
+    };
+
+    return &operacoes;
+}
+
+/*
  * COROLLARIO DA ORDEM DE PARADA
  * Proposito: converter a interrupção exterior em termo do dispositivo.
  * Pre-condições: o servidor singular já publicou seu controle.

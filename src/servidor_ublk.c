@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/mman.h>
 #include <ublksrv.h>
 #include <ublksrv_utils.h>
 #include <unistd.h>
@@ -17,6 +18,7 @@ struct estado_do_servidor_ublk {
     struct ublksrv_ctrl_dev *controle;
     const struct ublksrv_dev *dispositivo;
     int empregar_cuda;
+    int memoria_fixada;
 };
 /* Cada trabalhador possue fila autoral e fila exterior de igual índice. */
 struct incumbencia_da_fila_ublk {
@@ -329,6 +331,10 @@ int desmontar_servidor_ublk(struct estado_do_servidor_ublk *servidor)
     if (!destruir_meio_cuda(&servidor->meio_cuda) && resultado == 0) {
         resultado = -EIO;
     }
+    if (servidor->memoria_fixada) {
+        if (munlockall() != 0 && resultado == 0) resultado = -errno;
+        servidor->memoria_fixada = 0;
+    }
     if (servidor_em_exercicio == servidor) {
         servidor_em_exercicio = 0;
     }
@@ -353,13 +359,15 @@ int preparar_servidor_ublk(struct estado_do_servidor_ublk *servidor,
         servidor_em_exercicio != 0) return -EINVAL;
     servidor->configuracao = configuracao;
     servidor->empregar_cuda = empregar_cuda != 0;
+    /* O servidor de swap jámais poderá depender do proprio dispositivo. */
+    if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0) return -errno;
+    servidor->memoria_fixada = 1;
     if ((servidor->empregar_cuda && !criar_meio_cuda(
             &servidor->meio_cuda, configuracao->indice_da_gpu,
             configuracao->capacidade_em_bytes)) ||
         (!servidor->empregar_cuda && !criar_meio_simulado(
             &servidor->meio, configuracao->capacidade_em_bytes))) {
-        destruir_meio_simulado(&servidor->meio);
-        destruir_meio_cuda(&servidor->meio_cuda);
+        desmontar_servidor_ublk(servidor);
         return -ENOMEM;
     }
     servidor_em_exercicio = servidor;

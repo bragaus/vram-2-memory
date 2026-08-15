@@ -326,6 +326,9 @@ int desmontar_servidor_ublk(struct estado_do_servidor_ublk *servidor)
         servidor->controle = 0;
     }
     destruir_meio_simulado(&servidor->meio);
+    if (!destruir_meio_cuda(&servidor->meio_cuda) && resultado == 0) {
+        resultado = -EIO;
+    }
     if (servidor_em_exercicio == servidor) {
         servidor_em_exercicio = 0;
     }

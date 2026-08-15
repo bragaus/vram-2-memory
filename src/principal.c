@@ -8,7 +8,7 @@
 
 /*
  * LEMMA DO NUMERO DECIMAL
- * Proposito: converter argumento inteiro sem aceitar signal ou resto textual.
+ * Proposito: converter argumento inteiro sem aceitar sinal ou resto textual.
  * Pre-condições: texto e destino não nulos.
  * Effeitos: altera o destino somente na conversão integral.
  * Retorno: unidade no êxito e zero no vazio, excesso ou caractere estranho.

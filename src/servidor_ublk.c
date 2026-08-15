@@ -261,11 +261,11 @@ const struct ublksrv_tgt_type *obter_operacoes_do_alvo_cuda(void)
  * Proposito: converter a interrupção exterior em termo do dispositivo.
  * Pre-condições: o servidor singular já publicou seu controle.
  * Effeitos: solicita parada á libublksrv. Retorno: nenhum.
- * Razão: o signal só aponta a porta pela qual os fios hão de convergir.
+ * Razão: o sinal só aponta a porta pela qual os fios hão de convergir.
  */
-void ordenar_parada_do_servidor_ublk(int signal_recebido)
+void ordenar_parada_do_servidor_ublk(int sinal_recebido)
 {
-    (void)signal_recebido;
+    (void)sinal_recebido;
     if (servidor_em_exercicio != 0 &&
         servidor_em_exercicio->controle != 0) {
         ublksrv_ctrl_stop_dev(servidor_em_exercicio->controle);

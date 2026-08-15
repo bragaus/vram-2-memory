@@ -47,4 +47,20 @@ int criar_transportador_cuda(struct transportador_cuda *transportador,
  */
 int destruir_transportador_cuda(struct transportador_cuda *transportador);
 
+/*
+ * Proposito: reservar memória CPU fixada para que DMA a possa atravessar.
+ * Pre-condições: quantidade positiva e alojável.
+ * Effeitos: adquire cudaHostAllocPortable. Retorno: endereço ou nulo.
+ * Razão: memória paginável não demonstra travessia assíncrona por DMA.
+ */
+void *reservar_memoria_intermediaria_cuda(uint32_t quantidade_de_bytes);
+
+/*
+ * Proposito: devolver a memória CPU fixada depois da última transferência.
+ * Pre-condições: endereço nasceu de cudaHostAlloc ou é nulo.
+ * Effeitos: chama cudaFreeHost. Retorno: unidade no êxito ou zero.
+ * Razão: o nulo representa posse nenhuma e tem termo regular.
+ */
+int destruir_memoria_intermediaria_cuda(void *memoria);
+
 #endif

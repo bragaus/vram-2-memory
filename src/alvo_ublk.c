@@ -60,6 +60,38 @@ int transferir_requisicao_ublk(struct contexto_da_fila_ublk *contexto,
 }
 
 /*
+ * THEOREMA DA ENTREGA TEMPESTIVA
+ * Proposito: concluir dentro do prazo ou fallir e parar o apparelho.
+ * Pre-condições: etiqueta transferindo e instante final monotónico.
+ * Effeitos: entrega ao núcleo; rearma no êxito ou torna a falha terminal.
+ * Retorno: resultado exterior ou -ETIMEDOUT quando o prazo se consome.
+ * Razão: uma fila vencida não poderá receber trabalho novo honestamente.
+ */
+int entregar_requisicao_ublk(struct contexto_da_fila_ublk *contexto,
+                             const struct ublksrv_queue *fila_exterior,
+                             uint32_t etiqueta, int resultado,
+                             uint64_t instante_final)
+{
+    int resultado_da_entrega;
+
+    if (contexto == 0 || fila_exterior == 0) return -EINVAL;
+    if (falhar_requisicao_vencida(
+            contexto->fila, etiqueta, instante_final,
+            contexto->prazo_em_nanossegundos, -ETIMEDOUT)) {
+        ublksrv_complete_io(fila_exterior, etiqueta, -ETIMEDOUT);
+        ublksrv_ctrl_stop_dev(ublksrv_get_ctrl_dev(fila_exterior->dev));
+        return -ETIMEDOUT;
+    }
+    if (!concluir_requisicao_na_fila(
+            contexto->fila, etiqueta, resultado)) return -EIO;
+    resultado_da_entrega = ublksrv_complete_io(
+        fila_exterior, etiqueta, resultado);
+    if (resultado_da_entrega >= 0 &&
+        !rearmar_requisicao_na_fila(contexto->fila, etiqueta)) return -EIO;
+    return resultado_da_entrega;
+}
+
+/*
  * THEOREMA DA PASSAGEM UBLK
  * Proposito: possuir, transportar e entregar uma requisição exterior.
  * Pre-condições: fila e dados pertencem ao mesmo contexto publicado.

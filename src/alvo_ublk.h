@@ -47,22 +47,22 @@ int entregar_requisicao_ublk(struct contexto_da_fila_ublk *contexto,
                              uint64_t instante_final);
 
 /*
- * Proposito: fornecer a libublksrv um buffer CPU fixado por etiqueta.
+ * Proposito: fornecer memória CPU fixada por etiqueta á libublksrv.
  * Pre-condições: tamanho positivo; fila e etiqueta são contexto exterior.
  * Effeitos: adquire cudaHostAllocPortable. Retorno: endereço ou nulo.
  * Razão: somente memória fixada sustenta a promessa de DMA assíncrono.
  */
-void *reservar_buffer_ublk_cuda(const struct ublksrv_queue *fila_exterior,
-                                int etiqueta, int tamanho);
+void *reservar_memoria_ublk_cuda(const struct ublksrv_queue *fila_exterior,
+                                 int etiqueta, int tamanho);
 
 /*
- * Proposito: restituir o buffer fixado quando a fila exterior termina.
+ * Proposito: restituir a memória fixada quando a fila exterior termina.
  * Pre-condições: endereço entregue pela reserva CUDA.
  * Effeitos: chama cudaFreeHost. Retorno: nenhum.
  * Razão: a bibliotheca impõe esta assinatura exterior sem resultado.
  */
-void destruir_buffer_ublk_cuda(const struct ublksrv_queue *fila_exterior,
-                               void *memoria, int etiqueta);
+void destruir_memoria_ublk_cuda(const struct ublksrv_queue *fila_exterior,
+                                void *memoria, int etiqueta);
 
 /*
  * Proposito: traduzir uma requisição ublk em leitura ou escripta do meio.

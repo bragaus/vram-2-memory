@@ -173,7 +173,7 @@ static int regiao_cuda_e_valida(const struct transportador_cuda *transportador,
  * Pre-condições: transportador vivo, destino fixado e região contida.
  * Effeitos: submette cudaMemcpyAsync e synchroniza a corrente.
  * Retorno: unidade somente se submissão e termo alcançam êxito.
- * Razão: a conclusão posterior só poderá reutilizar buffer já preenchido.
+ * Razão: a conclusão posterior só reutilizará memória já preenchida.
  */
 int ler_meio_cuda(struct transportador_cuda *transportador,
                   uint64_t deslocamento, void *destino,

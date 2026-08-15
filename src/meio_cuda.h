@@ -67,7 +67,7 @@ int destruir_memoria_intermediaria_cuda(void *memoria);
  * Proposito: copiar VRAM para memória CPU fixada pela corrente da fila.
  * Pre-condições: região contida e destino nascido de cudaHostAlloc.
  * Effeitos: submette DMA e espera sua conclusão. Retorno: unidade ou zero.
- * Razão: a espera antecede a conclusão ublk que reutilizará o buffer.
+ * Razão: a espera antecede a conclusão que reutilizará a memória.
  */
 int ler_meio_cuda(struct transportador_cuda *transportador,
                   uint64_t deslocamento, void *destino,
@@ -87,7 +87,7 @@ int escrever_meio_cuda(struct transportador_cuda *transportador,
  * Proposito: reduzir a zero uma região da VRAM pela corrente da fila.
  * Pre-condições: transportador vivo e intervallo contido.
  * Effeitos: submette cudaMemsetAsync e espera. Retorno: unidade ou zero.
- * Razão: descarte não reclama buffer CPU nem abandona dados recuperáveis.
+ * Razão: descarte não reclama memória CPU nem abandona dados recuperáveis.
  */
 int zerar_meio_cuda(struct transportador_cuda *transportador,
                     uint64_t deslocamento, uint32_t quantidade_de_bytes);

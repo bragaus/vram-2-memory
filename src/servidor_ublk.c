@@ -249,8 +249,8 @@ const struct ublksrv_tgt_type *obter_operacoes_do_alvo_cuda(void)
         .name = "vram_2_memory_cuda",
         .init_tgt = inicializar_alvo_ublk,
         .handle_io_async = tratar_requisicao_ublk,
-        .alloc_io_buf = reservar_buffer_ublk_cuda,
-        .free_io_buf = destruir_buffer_ublk_cuda
+        .alloc_io_buf = reservar_memoria_ublk_cuda,
+        .free_io_buf = destruir_memoria_ublk_cuda
     };
 
     return &operacoes;

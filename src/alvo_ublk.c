@@ -33,8 +33,8 @@ uint64_t ler_instante_monotonico(void)
  * Pre-condições: tamanho positivo. Effeitos: reserva memória CPU fixada.
  * Retorno: endereço ou nulo. Razão: fila e etiqueta não mudam a grandeza.
  */
-void *reservar_buffer_ublk_cuda(const struct ublksrv_queue *fila_exterior,
-                                int etiqueta, int tamanho)
+void *reservar_memoria_ublk_cuda(const struct ublksrv_queue *fila_exterior,
+                                 int etiqueta, int tamanho)
 {
     (void)fila_exterior;
     (void)etiqueta;
@@ -48,8 +48,8 @@ void *reservar_buffer_ublk_cuda(const struct ublksrv_queue *fila_exterior,
  * Pre-condições: memória fixada ou nula. Effeitos: restitue a região.
  * Retorno: nenhum. Razão: fila e etiqueta não participam da posse material.
  */
-void destruir_buffer_ublk_cuda(const struct ublksrv_queue *fila_exterior,
-                               void *memoria, int etiqueta)
+void destruir_memoria_ublk_cuda(const struct ublksrv_queue *fila_exterior,
+                                void *memoria, int etiqueta)
 {
     (void)fila_exterior;
     (void)etiqueta;

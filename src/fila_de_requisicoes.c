@@ -124,3 +124,32 @@ int rearmar_requisicao_na_fila(struct fila_de_requisicoes *fila,
     fila->registros[etiqueta].estado = ESTADO_DA_REQUISICAO_AGUARDANDO;
     return 1;
 }
+
+/*
+ * THEOREMA DO PRAZO FINITO
+ * Proposito: levar á falha uma transferência que alcançou seu limite.
+ * Pre-condições: instantes monotónicos e prazo positivo.
+ * Effeitos: grava resultado e torna a falha terminal.
+ * Retorno: unidade no vencimento; zero se inválida ou ainda tempestiva.
+ * Razão: compara-se a differença somente após ordenar os instantes.
+ */
+int falhar_requisicao_vencida(struct fila_de_requisicoes *fila,
+                              uint32_t etiqueta, uint64_t instante_actual,
+                              uint64_t prazo, int resultado)
+{
+    struct registro_da_requisicao *registro;
+
+    if (fila == 0 || fila->registros == 0 || prazo == 0 ||
+        etiqueta >= fila->profundidade) {
+        return 0;
+    }
+    registro = &fila->registros[etiqueta];
+    if (registro->estado != ESTADO_DA_REQUISICAO_TRANSFERINDO ||
+        instante_actual < registro->instante_inicial_em_nanossegundos ||
+        instante_actual - registro->instante_inicial_em_nanossegundos < prazo) {
+        return 0;
+    }
+    registro->resultado = resultado;
+    registro->estado = ESTADO_DA_REQUISICAO_FALHOU;
+    return 1;
+}

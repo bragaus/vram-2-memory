@@ -56,4 +56,15 @@ int concluir_requisicao_na_fila(struct fila_de_requisicoes *fila,
 int rearmar_requisicao_na_fila(struct fila_de_requisicoes *fila,
                                uint32_t etiqueta);
 
+/*
+ * Proposito: condemnar transferência cujo prazo conhecido se consumiu.
+ * Pre-condições: relógio monotónico e prazo positivo em nanossegundos.
+ * Effeitos: passa de transferindo a falhou e grava o resultado.
+ * Retorno: unidade somente quando o vencimento é demonstrado.
+ * Razão: ordenar os instantes precede a subtracção e evita retorno do relógio.
+ */
+int falhar_requisicao_vencida(struct fila_de_requisicoes *fila,
+                              uint32_t etiqueta, uint64_t instante_actual,
+                              uint64_t prazo, int resultado);
+
 #endif

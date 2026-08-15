@@ -17,6 +17,7 @@ struct estado_do_servidor_ublk {
     struct meio_cuda meio_cuda;
     struct ublksrv_ctrl_dev *controle;
     const struct ublksrv_dev *dispositivo;
+    struct contadores_da_fila *contadores;
     int empregar_cuda;
     int memoria_fixada;
 };
@@ -25,7 +26,6 @@ struct incumbencia_da_fila_ublk {
     struct estado_do_servidor_ublk *servidor;
     struct fila_de_requisicoes fila;
     struct contexto_da_fila_ublk contexto;
-    struct contadores_da_fila contadores;
     struct transportador_cuda transportador_cuda;
     pthread_t fio_de_execucao;
     unsigned short indice;
@@ -80,7 +80,8 @@ void *servir_fila_ublk(void *argumento)
         return argumento;
     }
     incumbencia->contexto.fila = &incumbencia->fila;
-    incumbencia->contexto.contadores = &incumbencia->contadores;
+    incumbencia->contexto.contadores =
+        &incumbencia->servidor->contadores[incumbencia->indice];
     if (incumbencia->servidor->empregar_cuda) {
         incumbencia->contexto.transportador_cuda =
             &incumbencia->transportador_cuda;
@@ -423,12 +424,17 @@ int executar_servidor_com_meio(
     if (resultado < 0) return resultado;
     incumbencias = calloc(
         (size_t)configuracao->quantidade_de_filas, sizeof(*incumbencias));
-    if (incumbencias == 0) {
+    servidor.contadores = calloc(
+        (size_t)configuracao->quantidade_de_filas, sizeof(*servidor.contadores));
+    if (incumbencias == 0 || servidor.contadores == 0) {
+        free(servidor.contadores);
+        free(incumbencias);
         desmontar_servidor_ublk(&servidor);
         return -ENOMEM;
     }
     if (signal(SIGINT, ordenar_parada_do_servidor_ublk) == SIG_ERR ||
         signal(SIGTERM, ordenar_parada_do_servidor_ublk) == SIG_ERR) {
+        free(servidor.contadores);
         free(incumbencias);
         desmontar_servidor_ublk(&servidor);
         return -errno;
@@ -445,6 +451,7 @@ int executar_servidor_com_meio(
         if (resultado == 0) resultado = resultado_das_filas;
     }
     free(incumbencias);
+    free(servidor.contadores);
     resultado_do_desmonte = desmontar_servidor_ublk(&servidor);
     if (resultado == 0) resultado = resultado_do_desmonte;
     return resultado;

@@ -21,6 +21,17 @@ struct contexto_da_fila_ublk {
 uint64_t ler_instante_monotonico(void);
 
 /*
+ * Proposito: applicar uma operação ublk ao meio simulado.
+ * Pre-condições: contexto vivo e região previamente cercada.
+ * Effeitos: lê, escreve ou confirma descarga síncrona.
+ * Retorno: octetos transportados, zero na descarga ou erro negativo.
+ * Razão: operações externas convergem numa sentença autoral verificável.
+ */
+int transferir_requisicao_ublk(struct contexto_da_fila_ublk *contexto,
+                               uint8_t operacao, uint64_t deslocamento,
+                               void *memoria, uint32_t quantidade_de_bytes);
+
+/*
  * Proposito: traduzir uma requisição ublk em leitura ou escripta do meio.
  * Pre-condições: fila, contexto, etiqueta e memória intermediária válidos.
  * Effeitos: possue a etiqueta, transporta octetos e conclue-a uma vez.

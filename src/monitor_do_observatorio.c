@@ -1,5 +1,8 @@
 #include "monitor_do_observatorio.h"
 
+#include <stdint.h>
+#include <stdio.h>
+
 /*
  * THEOREMA DA REGUA FINITA
  * Proposito: converter uma parte em barra cercada por colchetes.
@@ -70,4 +73,21 @@ size_t desenhar_linha_scintillante(char *destino, size_t capacidade,
     }
     destino[visiveis] = '\0';
     return visiveis;
+}
+
+/*
+ * Proposito: converter total de uma janella em razão por segundo.
+ * Pre-condições: duração positiva em nanossegundos.
+ * Effeitos: nenhum. Retorno: razão saturada no maior inteiro.
+ * Razão: quociente e resto evitam multiplicar cegamente uma grandeza vasta.
+ */
+static uint64_t calcular_por_segundo(uint64_t total,
+                                    uint64_t duracao_em_nanossegundos)
+{
+    long double razao;
+
+    if (duracao_em_nanossegundos == 0) return 0;
+    razao = (long double)total * 1000000000.0L /
+            (long double)duracao_em_nanossegundos;
+    return razao >= (long double)UINT64_MAX ? UINT64_MAX : (uint64_t)razao;
 }

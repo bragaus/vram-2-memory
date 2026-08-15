@@ -252,3 +252,32 @@ int abrir_controle_ublk(struct estado_do_servidor_ublk *servidor)
     }
     return resultado;
 }
+
+/*
+ * COROLLARIO DO DESMONTE DO SERVIDOR
+ * Proposito: restituir dispositivo, controle e meio na ordem inversa.
+ * Pre-condições: todos os fios já convergiram ou nenhum foi iniciado.
+ * Effeitos: remove o dispositivo do núcleo e liberta toda posse local.
+ * Retorno: resultado da remoção, sem omittir a limpeza na falha.
+ * Razão: cada camada exterior morre antes da matéria que ella referencia.
+ */
+int desmontar_servidor_ublk(struct estado_do_servidor_ublk *servidor)
+{
+    int resultado = 0;
+
+    if (servidor == 0) return -EINVAL;
+    if (servidor->dispositivo != 0) {
+        ublksrv_dev_deinit(servidor->dispositivo);
+        servidor->dispositivo = 0;
+    }
+    if (servidor->controle != 0) {
+        resultado = ublksrv_ctrl_del_dev(servidor->controle);
+        ublksrv_ctrl_deinit(servidor->controle);
+        servidor->controle = 0;
+    }
+    destruir_meio_simulado(&servidor->meio);
+    if (servidor_em_exercicio == servidor) {
+        servidor_em_exercicio = 0;
+    }
+    return resultado;
+}

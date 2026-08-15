@@ -105,3 +105,22 @@ int escrever_meio_simulado(struct meio_simulado *meio, uint64_t deslocamento,
            (size_t)quantidade_de_bytes);
     return 1;
 }
+
+/*
+ * COROLLARIO DA REGIAO NULA
+ * Proposito: apagar uma região consentida do reservatório.
+ * Pre-condições: meio vivo e intervallo válido.
+ * Effeitos: escreve zeros somente na região. Retorno: unidade ou zero.
+ * Razão: descarte em meio volátil converge á mesma figura que zero explícito.
+ */
+int zerar_meio_simulado(struct meio_simulado *meio, uint64_t deslocamento,
+                        uint32_t quantidade_de_bytes)
+{
+    if (!intervallo_do_meio_e_valido(
+            meio, deslocamento, quantidade_de_bytes)) {
+        return 0;
+    }
+    memset(meio->memoria + (size_t)deslocamento, 0,
+           (size_t)quantidade_de_bytes);
+    return 1;
+}

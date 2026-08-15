@@ -44,4 +44,13 @@ int ler_meio_simulado(const struct meio_simulado *meio, uint64_t deslocamento,
 int escrever_meio_simulado(struct meio_simulado *meio, uint64_t deslocamento,
                            const void *origem, uint32_t quantidade_de_bytes);
 
+/*
+ * Proposito: reduzir a zero uma região dispensada ou explicitamente zerada.
+ * Pre-condições: meio vivo e intervallo contido.
+ * Effeitos: altera somente a região. Retorno: unidade ou zero.
+ * Razão: descarte e escripta de zeros possuem o mesmo effeito no meio volátil.
+ */
+int zerar_meio_simulado(struct meio_simulado *meio, uint64_t deslocamento,
+                        uint32_t quantidade_de_bytes);
+
 #endif

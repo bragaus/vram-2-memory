@@ -1,5 +1,6 @@
 COMPILADOR ?= cc
 DIRECTORIO_DO_CUDA ?= /usr/local/cuda
+DISPOSITIVO ?=
 AVISOS := -std=c11 -Wall -Wextra -Wpedantic -Werror
 DIRECTORIO_DA_CONSTRUCAO := construcao
 PROVAS := $(DIRECTORIO_DA_CONSTRUCAO)/provar_transicoes \
@@ -12,7 +13,7 @@ FONTES_DO_SERVIDOR := src/principal.c src/servidor_ublk.c src/alvo_ublk.c \
 SERVIDOR := $(DIRECTORIO_DA_CONSTRUCAO)/vram-2-memory
 PROVA_CUDA := $(DIRECTORIO_DA_CONSTRUCAO)/provar_meio_cuda
 
-.PHONY: provar provar_cuda preparar_ublk preparar_cuda limpar
+.PHONY: provar provar_cuda provar_pressao preparar_ublk preparar_cuda limpar
 
 provar: $(PROVAS)
 	@for prova in $(PROVAS); do $$prova; done
@@ -40,6 +41,9 @@ preparar_ublk: $(SERVIDOR)
 preparar_cuda: $(SERVIDOR)
 provar_cuda: $(PROVA_CUDA)
 	$(PROVA_CUDA)
+
+provar_pressao:
+	./testes/provar_pressao_e_swap.sh "$(DISPOSITIVO)"
 
 $(PROVA_CUDA): testes/provar_meio_cuda.c src/meio_cuda.c | $(DIRECTORIO_DA_CONSTRUCAO)
 	$(COMPILADOR) $(AVISOS) -I$(DIRECTORIO_DO_CUDA)/include $^ -o $@ \

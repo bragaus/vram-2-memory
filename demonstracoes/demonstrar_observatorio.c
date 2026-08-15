@@ -74,5 +74,11 @@ int main(void)
     };
 
     if (!simular_carga(&retrato)) return 1;
-    return apresentar_retrato(&retrato, &voz, 1000000000ULL) ? 0 : 1;
+    if (!apresentar_retrato(&retrato, &voz, 1000000000ULL)) return 1;
+    fputs("\n--- LIMIAR ARTIFICIAL ---\n", stdout);
+    voz.p99_alarmante_em_microssegundos = 1;
+    if (!apresentar_retrato(&retrato, &voz, 1000000000ULL)) return 1;
+    fputs("\n--- RETRATO ENVELHECIDO ---\n", stdout);
+    voz.p99_alarmante_em_microssegundos = 1000;
+    return apresentar_retrato(&retrato, &voz, 4000000000ULL) ? 0 : 1;
 }

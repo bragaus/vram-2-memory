@@ -20,6 +20,10 @@
 - `[!]` Filas ublk e conclusão única escriptas; execução suspensa.
 - `[!]` Meio CUDA e travessia DMA escriptos; execução suspensa.
 - `[!]` Pressão, `fio` e `swap` preparados; execução destructiva suspensa.
+- `[ ]` Retrato estatístico frio, apartado do caminho das requisições.
+- `[ ]` Monitor terminal com graphicos e estampas ASCII.
+- `[ ]` Papel `Observador de Si`, fiel á origem e idade das medidas.
+- `[ ]` Provas de legibilidade, segurança e degradação dos sensores.
 
 ## § III. DA PROPOSIÇÃO IMMEDIATA
 
@@ -51,3 +55,19 @@ machina até que o Geometra restitua licença às experiências.
 
 **Limite conhecido:** nenhuma prova posterior a `75316ce` foi executada nesta
 machina. A penna avança às cegas sem converter conjectura em facto. **Q.E.D.**
+
+## § VI. DA VOZ DO APPARELHO
+
+O observatório converterá contadores por fila em retratos immutáveis no caminho
+frio. Quadros, histogrammas e estampas ASCII beberão todos do mesmo retrato;
+arte alguma poderá mudar, arredondar ou occultar a grandeza que representa.
+
+Chamaremos `Observador de Si` ao papel que conhece seu estado operacional, a
+fonte de cada número, a idade da amostra e os vazios de sua percepção. Elle
+dirá `OBSERVEI` para medida directa, `INFERI` para conclusão acompanhada de suas
+causas, e `IGNORO` quando faltar autoridade. Esta personagem é interface
+determinística, não allegação de consciência.
+
+Temperatura e potência serão facultativas; vazão, operações, erros, prazos,
+latências e amostras perdidas serão contractuaes. O observador jámais executará
+comando, activará `swap` ou alterará a machina que contempla. **Q.E.D.**

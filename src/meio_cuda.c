@@ -189,3 +189,26 @@ int ler_meio_cuda(struct transportador_cuda *transportador,
                         transportador->corrente) != cudaSuccess) return 0;
     return cudaStreamSynchronize(transportador->corrente) == cudaSuccess;
 }
+
+/*
+ * THEOREMA DA ESCRIPTA POR DMA
+ * Proposito: mover origem CPU fixada para uma região da VRAM.
+ * Pre-condições: transportador vivo, origem fixada e região contida.
+ * Effeitos: submette cudaMemcpyAsync e synchroniza a corrente.
+ * Retorno: unidade somente se submissão e termo alcançam êxito.
+ * Razão: a conclusão posterior só poderá expor dados já depositados.
+ */
+int escrever_meio_cuda(struct transportador_cuda *transportador,
+                       uint64_t deslocamento, const void *origem,
+                       uint32_t quantidade_de_bytes)
+{
+    if (origem == 0 || !regiao_cuda_e_valida(
+            transportador, deslocamento, quantidade_de_bytes)) return 0;
+    if (cudaSetDevice(transportador->meio->indice_da_gpu) != cudaSuccess ||
+        cudaMemcpyAsync(transportador->meio->memoria_da_gpu +
+                            (size_t)deslocamento,
+                        origem, (size_t)quantidade_de_bytes,
+                        cudaMemcpyHostToDevice,
+                        transportador->corrente) != cudaSuccess) return 0;
+    return cudaStreamSynchronize(transportador->corrente) == cudaSuccess;
+}

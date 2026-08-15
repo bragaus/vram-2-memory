@@ -67,7 +67,7 @@ static size_t descobrir_largura_do_observatorio(void)
 static void *observar_servidor_ublk(void *argumento)
 {
     struct estado_do_servidor_ublk *servidor = argumento;
-    struct retrato_do_observatorio retrato;
+    struct retrato_do_observatorio retrato, anterior = {0}, janella;
     struct configuracao_do_monitor configuracao;
     const struct timespec repouso = {1, 0};
     uint64_t instante_anterior = ler_instante_monotonico();
@@ -79,6 +79,7 @@ static void *observar_servidor_ublk(void *argumento)
         size_t tamanho;
         ssize_t escriptos;
 
+        anterior.instante_monotonico_em_nanossegundos = instante_anterior;
         if (!colher_retrato_do_observatorio(
                 &retrato, servidor->contadores,
                 (size_t)servidor->configuracao->quantidade_de_filas,
@@ -91,15 +92,18 @@ static void *observar_servidor_ublk(void *argumento)
             (uint64_t)servidor->configuracao->quantidade_de_filas *
             servidor->configuracao->profundidade_das_filas *
             servidor->configuracao->maior_operacao_em_bytes;
+        if (!differenciar_retratos_do_observatorio(
+                &janella, &retrato, &anterior)) break;
         configuracao.largura_em_colunas = descobrir_largura_do_observatorio();
         configuracao.empregar_cor = isatty(STDERR_FILENO);
         tamanho = escrever_quadro_do_observatorio(
-            quadro, sizeof(quadro), &retrato, &configuracao);
+            quadro, sizeof(quadro), &janella, &configuracao);
         escriptos = tamanho == 0 ? -1 :
             write(STDERR_FILENO, quadro, tamanho);
         if (escriptos < 0 || (size_t)escriptos != tamanho)
             atomic_fetch_add_explicit(&servidor->contadores[0].amostras_perdidas,
                                       1, memory_order_relaxed);
+        anterior = retrato;
         instante_anterior = instante_actual;
         nanosleep(&repouso, 0);
     }

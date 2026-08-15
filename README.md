@@ -66,6 +66,21 @@ As grandezas são capacidade, filas, profundidade, maior operação, prazo em
 millisegundos e índice facultativo da GPU. O dispositivo publicado permanece
 volátil e não recebe dados cuja perda seja irreparável.
 
+### A voz que contempla a machina
+
+Durante o serviço, um fio frio apresenta em `stderr` a reserva de memória,
+vazão da última janella, operações por segundo, latências, erros e prazos. O
+quadro mede novamente a largura do terminal a cada colheita; quando a saída não
+for terminal, elimina côres sem eliminar números ou unidades.
+
+O `Observador de Si` acompanha a estampa com uma sentença classificada:
+`OBSERVEI` declara medida directa; `INFERI` nomeia o limiar e a grandeza que o
+alcançou; `IGNORO` denuncia retrato antigo ou percepção ausente. A personagem
+não executa comandos nem muda a configuração que contempla.
+
+Sensores de temperatura e potência ainda não possuem fonte exterior nesta
+parcela da obra e, por honestidade, aparecem como `IGNORO`.
+
 **ADVERTÊNCIA DESTRUTIVA.** Somente depois de identificar exactamente o bloco
 ublk creado, a prova integral poderá ser expressamente destrancada:
 

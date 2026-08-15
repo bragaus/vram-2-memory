@@ -15,7 +15,7 @@
 - `[✓]` Contracto dos estados: quatro posições e grandezas da requisição.
 - `[✓]` Lei das transições: discernir cada passagem legítima entre estados.
 - `[✓]` Provas unitárias da lei das transições.
-- `[~]` Configuração do apparelho e limites sem estouro.
+- `[!]` Configuração e prova escriptas; execução suspensa por ordem do Geometra.
 - `[ ]` Meio simulado em RAM para as experiências sem GPU.
 - `[ ]` Filas ublk e conclusão única por etiqueta.
 - `[ ]` Meio CUDA e travessia real por DMA.
@@ -23,8 +23,8 @@
 
 ## § III. DA PROPOSIÇÃO IMMEDIATA
 
-Lavrar `src/configuracao.c`: recusar o nulo, as grandezas vazias, o
-desalinhamento do bloco e todo producto que possa transbordar.
+Executar `make provar`: a receita está lavrada, porém não será invocada nesta
+machina até que o Geometra restitua licença às experiências.
 
 ## § IV. DA REGRA DE PASSAGEM
 
@@ -40,5 +40,9 @@ desalinhamento do bloco e todo producto que possa transbordar.
 |---|---|---|
 | `6f7190f` | Proêmio público | revisão integral de 50 linhas |
 | `75316ce` | Contracto dos estados | C11 com todos os avisos fataes |
+| `bfbffc1` | Limites da configuração | execução suspensa por ordem exterior |
+| `b76b7f8` | Prova escripta dos limites | execução suspensa por ordem exterior |
+| `44185eb` | Receita das demonstrações | comando `make provar`, não executado |
 
-**Próximo corollário:** demonstrar os limites da configuração. **Q.E.D.**
+**Limite conhecido:** nenhuma prova posterior a `75316ce` foi executada nesta
+machina. A penna avança às cegas sem converter conjectura em facto. **Q.E.D.**

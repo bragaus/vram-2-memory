@@ -84,3 +84,34 @@ int criar_transportador_cuda(struct transportador_cuda *transportador,
     transportador->corrente = corrente;
     return 1;
 }
+
+/*
+ * COROLLARIO DO TERMO DA CORRENTE
+ * Proposito: esperar toda cópia e restituir a corrente á GPU.
+ * Pre-condições: nenhuma; transportador vazio é termo regular.
+ * Effeitos: synchroniza, destrói e zera o transportador.
+ * Retorno: unidade somente quando synchronização e destruição concordam.
+ * Razão: mesmo erro tardio não dispensa a tentativa de restituir a posse.
+ */
+int destruir_transportador_cuda(struct transportador_cuda *transportador)
+{
+    cudaError_t resultado_da_synchronizacao;
+    cudaError_t resultado_da_destruicao;
+
+    if (transportador == 0 || transportador->corrente == 0) {
+        return 1;
+    }
+    if (transportador->meio == 0 ||
+        cudaSetDevice(transportador->meio->indice_da_gpu) != cudaSuccess) {
+        return 0;
+    }
+    resultado_da_synchronizacao =
+        cudaStreamSynchronize(transportador->corrente);
+    resultado_da_destruicao = cudaStreamDestroy(transportador->corrente);
+    if (resultado_da_destruicao == cudaSuccess) {
+        transportador->corrente = 0;
+        transportador->meio = 0;
+    }
+    return resultado_da_synchronizacao == cudaSuccess &&
+           resultado_da_destruicao == cudaSuccess;
+}

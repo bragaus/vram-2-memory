@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <ublksrv.h>
 #include <ublksrv_utils.h>
@@ -40,6 +41,25 @@ struct incumbencia_da_fila_ublk {
     int resultado;
 };
 static struct estado_do_servidor_ublk *servidor_em_exercicio;
+
+/*
+ * LEMMA DO GABINETE DE EXECUCAO
+ * Proposito: assegurar a casa onde ublksrv conserva o processo dirigente.
+ * Pre-condições: caminho absoluto, não vazio e pertencente á bibliotheca.
+ * Effeitos: crea o directório ausente; não altera um directório existente.
+ * Retorno: zero no êxito ou erro negativo quando o caminho não é directório.
+ * Razão: a instalação local não possue gestor de serviços que prepare /run.
+ */
+static int preparar_directorio_de_execucao(const char *caminho)
+{
+    struct stat estado;
+
+    if (caminho == 0 || caminho[0] == 0) return -EINVAL;
+    if (mkdir(caminho, 0755) == 0) return 0;
+    if (errno != EEXIST) return -errno;
+    if (stat(caminho, &estado) != 0) return -errno;
+    return S_ISDIR(estado.st_mode) ? 0 : -ENOTDIR;
+}
 
 /*
  * Proposito: descobrir novamente a largura concedida pelo terminal.
@@ -442,6 +462,8 @@ int abrir_controle_ublk(struct estado_do_servidor_ublk *servidor)
     dados.tgt_ops = servidor->empregar_cuda ?
         obter_operacoes_do_alvo_cuda() : obter_operacoes_do_alvo_ublk();
     dados.run_dir = ublksrv_get_pid_dir();
+    resultado = preparar_directorio_de_execucao(dados.run_dir);
+    if (resultado < 0) return resultado;
     servidor->controle = ublksrv_ctrl_init(&dados);
     if (servidor->controle == 0) return -ENODEV;
     resultado = ublksrv_ctrl_add_dev(servidor->controle);

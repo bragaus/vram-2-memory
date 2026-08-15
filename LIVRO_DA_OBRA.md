@@ -23,8 +23,8 @@
 
 ## § III. DA PROPOSIÇÃO IMMEDIATA
 
-Lavrar `src/configuracao.h`: fixar capacidade, filas, profundidade, maior
-operação e prazo, todos com grandezas explícitas e limites demonstráveis.
+Lavrar `src/configuracao.c`: recusar o nulo, as grandezas vazias, o
+desalinhamento do bloco e todo producto que possa transbordar.
 
 ## § IV. DA REGRA DE PASSAGEM
 
@@ -41,4 +41,4 @@ operação e prazo, todos com grandezas explícitas e limites demonstráveis.
 | `6f7190f` | Proêmio público | revisão integral de 50 linhas |
 | `75316ce` | Contracto dos estados | C11 com todos os avisos fataes |
 
-**Próximo corollário:** cercar as grandezas da configuração. **Q.E.D.**
+**Próximo corollário:** demonstrar os limites da configuração. **Q.E.D.**

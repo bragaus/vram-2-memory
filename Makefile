@@ -9,7 +9,7 @@ PROVAS := $(DIRECTORIO_DA_CONSTRUCAO)/provar_transicoes \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_fila_de_requisicoes
 FONTES_DO_SERVIDOR := src/principal.c src/servidor_ublk.c src/alvo_ublk.c \
 	src/configuracao.c src/estado_da_requisicao.c src/meio_simulado.c \
-	src/meio_cuda.c src/fila_de_requisicoes.c
+	src/meio_cuda.c src/fila_de_requisicoes.c src/retrato_do_observatorio.c
 SERVIDOR := $(DIRECTORIO_DA_CONSTRUCAO)/vram-2-memory
 PROVA_CUDA := $(DIRECTORIO_DA_CONSTRUCAO)/provar_meio_cuda
 

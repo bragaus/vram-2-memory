@@ -82,6 +82,10 @@ void *servir_fila_ublk(void *argumento)
         incumbencia->resultado = ublksrv_process_io(fila_exterior);
     } while (incumbencia->resultado >= 0 &&
              !ublksrv_queue_is_done(fila_exterior));
+    /* A parada ordenada poderá romper a espera com código exterior negativo. */
+    if (ublksrv_queue_is_done(fila_exterior)) {
+        incumbencia->resultado = 0;
+    }
     ublksrv_queue_deinit(fila_exterior);
     destruir_fila_de_requisicoes(&incumbencia->fila);
     return argumento;

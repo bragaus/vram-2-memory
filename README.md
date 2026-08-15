@@ -81,6 +81,16 @@ não executa comandos nem muda a configuração que contempla.
 Sensores de temperatura e potência ainda não possuem fonte exterior nesta
 parcela da obra e, por honestidade, aparecem como `IGNORO`.
 
+A demonstração sem GPU, privilégios ou dispositivo de bloco executa-se por:
+
+```text
+make demonstrar_simulacao
+```
+
+Ella transporta dezasseis octetos pela RAM simulada e apresenta, em ordem, uma
+observação directa, uma inferência causada por limiar artificial e a ignorância
+de um retrato envelhecido. Nenhum passo acciona `ublk`, `fio` ou `swap`.
+
 **ADVERTÊNCIA DESTRUTIVA.** Somente depois de identificar exactamente o bloco
 ublk creado, a prova integral poderá ser expressamente destrancada:
 

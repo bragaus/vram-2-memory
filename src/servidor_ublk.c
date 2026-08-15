@@ -344,15 +344,20 @@ int desmontar_servidor_ublk(struct estado_do_servidor_ublk *servidor)
  * Razão: a publicação só virá quando toda memória e geometria existirem.
  */
 int preparar_servidor_ublk(struct estado_do_servidor_ublk *servidor,
-                           const struct configuracao_do_apparelho *configuracao)
+                           const struct configuracao_do_apparelho *configuracao,
+                           int empregar_cuda)
 {
     int resultado;
 
     if (servidor == 0 || !configuracao_do_apparelho_e_valida(configuracao) ||
         servidor_em_exercicio != 0) return -EINVAL;
     servidor->configuracao = configuracao;
-    if (!criar_meio_simulado(&servidor->meio,
-                             configuracao->capacidade_em_bytes)) {
+    servidor->empregar_cuda = empregar_cuda != 0;
+    if ((servidor->empregar_cuda && !criar_meio_cuda(
+            &servidor->meio_cuda, configuracao->indice_da_gpu,
+            configuracao->capacidade_em_bytes)) ||
+        (!servidor->empregar_cuda && !criar_meio_simulado(
+            &servidor->meio, configuracao->capacidade_em_bytes))) {
         return -ENOMEM;
     }
     servidor_em_exercicio = servidor;
@@ -392,7 +397,7 @@ int executar_servidor_ublk(
     int resultado;
     int resultado_do_desmonte;
 
-    resultado = preparar_servidor_ublk(&servidor, configuracao);
+    resultado = preparar_servidor_ublk(&servidor, configuracao, 0);
     if (resultado < 0) return resultado;
     incumbencias = calloc(
         (size_t)configuracao->quantidade_de_filas, sizeof(*incumbencias));

@@ -1,9 +1,11 @@
 #include "servidor_ublk.h"
 #include "alvo_ublk.h"
+#include "monitor_do_observatorio.h"
 #include <errno.h>
 #include <limits.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdatomic.h>
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <ublksrv.h>
@@ -18,6 +20,9 @@ struct estado_do_servidor_ublk {
     struct ublksrv_ctrl_dev *controle;
     const struct ublksrv_dev *dispositivo;
     struct contadores_da_fila *contadores;
+    pthread_t fio_do_observatorio;
+    atomic_int ordenar_termo_do_observatorio;
+    int observatorio_iniciado;
     int empregar_cuda;
     int memoria_fixada;
 };

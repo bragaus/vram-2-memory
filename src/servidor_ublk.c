@@ -424,7 +424,8 @@ int abrir_controle_ublk(struct estado_do_servidor_ublk *servidor)
 
     if (servidor == 0 || servidor->configuracao == 0 ||
         servidor->configuracao->quantidade_de_filas > USHRT_MAX ||
-        servidor->configuracao->quantidade_de_filas > UBLK_MAX_NR_QUEUES ||
+        (unsigned int)servidor->configuracao->quantidade_de_filas >
+            UBLK_MAX_NR_QUEUES ||
         servidor->configuracao->profundidade_das_filas > UBLK_MAX_QUEUE_DEPTH ||
         servidor->configuracao->maior_operacao_em_bytes > INT_MAX) {
         return -EINVAL;

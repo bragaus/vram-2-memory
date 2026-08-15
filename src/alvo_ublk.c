@@ -130,7 +130,8 @@ int entregar_requisicao_ublk(struct contexto_da_fila_ublk *contexto,
             contexto->fila, etiqueta, instante_final,
             contexto->prazo_em_nanossegundos, -ETIMEDOUT)) {
         ublksrv_complete_io(fila_exterior, etiqueta, -ETIMEDOUT);
-        ublksrv_ctrl_stop_dev(ublksrv_get_ctrl_dev(fila_exterior->dev));
+        ublksrv_ctrl_stop_dev((struct ublksrv_ctrl_dev *)
+                              ublksrv_get_ctrl_dev(fila_exterior->dev));
         return -ETIMEDOUT;
     }
     if (!concluir_requisicao_na_fila(

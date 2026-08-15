@@ -66,8 +66,8 @@ $(PROVA_CUDA): testes/provar_meio_cuda.c src/meio_cuda.c | $(DIRECTORIO_DA_CONST
 		-L$(DIRECTORIO_DO_CUDA)/lib64 -Wl,-rpath,$(DIRECTORIO_DO_CUDA)/lib64 -lcudart
 
 $(SERVIDOR): $(FONTES_DO_SERVIDOR) | $(DIRECTORIO_DA_CONSTRUCAO)
-	$(COMPILADOR) $(AVISOS) -I$(DIRECTORIO_DO_CUDA)/include \
-		$$(pkg-config --cflags ublksrv) $^ -o $@ \
+	$(COMPILADOR) $(AVISOS) -D_GNU_SOURCE -I$(DIRECTORIO_DO_CUDA)/include \
+		-isystem$$(pkg-config --variable=includedir ublksrv) $^ -o $@ \
 		$$(pkg-config --libs ublksrv) -L$(DIRECTORIO_DO_CUDA)/lib64 \
 		-Wl,-rpath,$(DIRECTORIO_DO_CUDA)/lib64 -lcudart -pthread
 

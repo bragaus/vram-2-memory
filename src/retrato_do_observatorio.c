@@ -66,8 +66,8 @@ static uint64_t calcular_percentil(const uint64_t *histogramma,
     size_t indice;
 
     if (histogramma == 0 || total == 0 || centesimos == 0) return 0;
-    alvo = total / 100 * centesimos;
-    if (total % 100 * centesimos != 0) ++alvo;
+    alvo = total / 100 * centesimos +
+           (total % 100 * centesimos + 99) / 100;
     for (indice = 0; indice < QUANTIDADE_DE_DEGRAUS_DA_LATENCIA; ++indice) {
         acumulado += histogramma[indice];
         if (acumulado >= alvo) return limites[indice];

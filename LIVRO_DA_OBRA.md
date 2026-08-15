@@ -80,7 +80,7 @@ comando, activará `swap` ou alterará a machina que contempla. **Q.E.D.**
 
 A experiência futura avançará por quatro portas, sommando dez horas de labor:
 
-1. `[ ]` estabelecer em duas horas a linha de base portátil com `make provar`;
+1. `[✓]` linha de base portátil demonstrada com `make provar`;
 2. `[ ]` demonstrar em três horas o meio simulado e sua voz estatística;
 3. `[ ]` cercar em três horas a passagem CUDA com `compute-sanitizer`;
 4. `[ ]` publicar em duas horas um ublk pequeno, sem `fio` e sem `swap`.
@@ -92,3 +92,18 @@ machina apropriada, GPU observada e dados dispensáveis.
 
 Pressão de memória, `fio`, `mkswap` e `swapon` não pertencem a esta jornada.
 Nenhuma conveniência de palco poderá vencer esta fronteira. **Q.E.D.**
+
+## § VIII. DA ABERTURA DA PRIMEIRA PORTA
+
+Em XV de Agosto de MMXXVI, já revogada a suspensão pelo Geometra, executou-se:
+
+```text
+make provar
+```
+
+Na machina Linux 6.17.0-22-generic x86_64, o compilador GCC 13.3.0 construiu
+cinco provas sob C11, `-Wall`, `-Wextra`, `-Wpedantic` e `-Werror`. Transições,
+configuração, meio simulado, filas e observatório devolveram êxito.
+
+**Limite conhecido:** GPU, CUDA, ublk, privilégios, `fio` e `swap` não foram
+tocados por esta demonstração. A primeira porta está verde. **Q.E.D.**

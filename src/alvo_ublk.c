@@ -95,6 +95,16 @@ int transferir_requisicao_ublk(struct contexto_da_fila_ublk *contexto,
                (int)quantidade_de_bytes : -EIO;
     case UBLK_IO_OP_FLUSH:
         return 0;
+    case UBLK_IO_OP_DISCARD:
+    case UBLK_IO_OP_WRITE_ZEROES:
+        if (contexto->transportador_cuda != 0) {
+            return zerar_meio_cuda(contexto->transportador_cuda, deslocamento,
+                                   quantidade_de_bytes) ?
+                   (int)quantidade_de_bytes : -EIO;
+        }
+        return zerar_meio_simulado(contexto->meio_simulado, deslocamento,
+                                   quantidade_de_bytes) ?
+               (int)quantidade_de_bytes : -EIO;
     default:
         return -EOPNOTSUPP;
     }

@@ -84,12 +84,13 @@ static uint64_t calcular_percentil(const uint64_t *histogramma,
  */
 int colher_retrato_do_observatorio(
     struct retrato_do_observatorio *retrato,
-    const struct contadores_da_fila *filas, size_t quantidade_de_filas,
+    struct contadores_da_fila *filas, size_t quantidade_de_filas,
     uint64_t instante_actual_em_nanossegundos,
     uint64_t instante_anterior_em_nanossegundos)
 {
     struct retrato_do_observatorio figura = {0};
     uint64_t histogramma[QUANTIDADE_DE_DEGRAUS_DA_LATENCIA] = {0};
+    uint64_t amostras_de_latencia = 0;
     size_t fila, degrau;
     if (retrato == 0 || filas == 0 || quantidade_de_filas == 0 ||
         instante_actual_em_nanossegundos < instante_anterior_em_nanossegundos)
@@ -111,16 +112,19 @@ int colher_retrato_do_observatorio(
             &filas[fila].prazos_expirados, memory_order_relaxed);
         figura.amostras_perdidas += atomic_load_explicit(
             &filas[fila].amostras_perdidas, memory_order_relaxed);
-        for (degrau = 0; degrau < QUANTIDADE_DE_DEGRAUS_DA_LATENCIA; ++degrau)
-            histogramma[degrau] += atomic_load_explicit(
-                &filas[fila].latencias[degrau], memory_order_relaxed);
+        for (degrau = 0; degrau < QUANTIDADE_DE_DEGRAUS_DA_LATENCIA; ++degrau) {
+            uint64_t amostras = atomic_exchange_explicit(
+                &filas[fila].latencias[degrau], 0, memory_order_relaxed);
+            histogramma[degrau] += amostras;
+            amostras_de_latencia += amostras;
+        }
     }
     figura.latencia_p50_em_microssegundos = calcular_percentil(
-        histogramma, figura.operacoes_concluidas, 50);
+        histogramma, amostras_de_latencia, 50);
     figura.latencia_p95_em_microssegundos = calcular_percentil(
-        histogramma, figura.operacoes_concluidas, 95);
+        histogramma, amostras_de_latencia, 95);
     figura.latencia_p99_em_microssegundos = calcular_percentil(
-        histogramma, figura.operacoes_concluidas, 99);
+        histogramma, amostras_de_latencia, 99);
     *retrato = figura;
     return 1;
 }

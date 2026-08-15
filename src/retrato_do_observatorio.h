@@ -47,7 +47,7 @@ void registrar_operacao_observada(struct contadores_da_fila *contadores,
 
 int colher_retrato_do_observatorio(
     struct retrato_do_observatorio *retrato,
-    const struct contadores_da_fila *filas, size_t quantidade_de_filas,
+    struct contadores_da_fila *filas, size_t quantidade_de_filas,
     uint64_t instante_actual_em_nanossegundos,
     uint64_t instante_anterior_em_nanossegundos);
 

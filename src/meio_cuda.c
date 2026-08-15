@@ -34,3 +34,26 @@ int criar_meio_cuda(struct meio_cuda *meio, int indice_da_gpu,
     meio->indice_da_gpu = indice_da_gpu;
     return 1;
 }
+
+/*
+ * COROLLARIO DA RESTITUICAO DA VRAM
+ * Proposito: devolver ao engenho exacto a reserva que elle concedeu.
+ * Pre-condições: nenhuma; meio nulo ou vazio é termo regular.
+ * Effeitos: escolhe a GPU, liberta VRAM e zera o registro.
+ * Retorno: unidade no termo ou zero se CUDA conservar a posse.
+ * Razão: o registro só se apaga depois da confirmação de cudaFree.
+ */
+int destruir_meio_cuda(struct meio_cuda *meio)
+{
+    if (meio == 0 || meio->memoria_da_gpu == 0) {
+        return 1;
+    }
+    if (cudaSetDevice(meio->indice_da_gpu) != cudaSuccess ||
+        cudaFree(meio->memoria_da_gpu) != cudaSuccess) {
+        return 0;
+    }
+    meio->memoria_da_gpu = 0;
+    meio->capacidade_em_bytes = 0;
+    meio->indice_da_gpu = 0;
+    return 1;
+}

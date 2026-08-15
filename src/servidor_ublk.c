@@ -74,7 +74,7 @@ void *servir_fila_ublk(void *argumento)
         return argumento;
     }
     incumbencia->contexto.fila = &incumbencia->fila;
-    incumbencia->contexto.meio = &incumbencia->servidor->meio;
+    incumbencia->contexto.meio_simulado = &incumbencia->servidor->meio;
     incumbencia->contexto.prazo_em_nanossegundos =
         (uint64_t)incumbencia->servidor->configuracao
             ->prazo_da_operacao_em_milissegundos * 1000000ULL;

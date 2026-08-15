@@ -2,6 +2,7 @@
 #define ALVO_UBLK_H
 
 #include "fila_de_requisicoes.h"
+#include "meio_cuda.h"
 #include "meio_simulado.h"
 
 #include <ublksrv.h>
@@ -9,7 +10,8 @@
 /* A fila exterior encontra aqui o meio e o livro de suas etiquetas. */
 struct contexto_da_fila_ublk {
     struct fila_de_requisicoes *fila;
-    struct meio_simulado *meio;
+    struct meio_simulado *meio_simulado;
+    struct transportador_cuda *transportador_cuda;
     uint64_t prazo_em_nanossegundos;
 };
 

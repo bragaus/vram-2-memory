@@ -39,17 +39,17 @@ int transferir_requisicao_ublk(struct contexto_da_fila_ublk *contexto,
                                uint8_t operacao, uint64_t deslocamento,
                                void *memoria, uint32_t quantidade_de_bytes)
 {
-    if (contexto == 0 || contexto->meio == 0 ||
+    if (contexto == 0 || contexto->meio_simulado == 0 ||
         quantidade_de_bytes > INT_MAX) {
         return -EINVAL;
     }
     switch (operacao) {
     case UBLK_IO_OP_READ:
-        return ler_meio_simulado(contexto->meio, deslocamento, memoria,
+        return ler_meio_simulado(contexto->meio_simulado, deslocamento, memoria,
                                  quantidade_de_bytes) ?
                (int)quantidade_de_bytes : -EIO;
     case UBLK_IO_OP_WRITE:
-        return escrever_meio_simulado(contexto->meio, deslocamento, memoria,
+        return escrever_meio_simulado(contexto->meio_simulado, deslocamento, memoria,
                                       quantidade_de_bytes) ?
                (int)quantidade_de_bytes : -EIO;
     case UBLK_IO_OP_FLUSH:

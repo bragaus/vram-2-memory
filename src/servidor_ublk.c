@@ -1,6 +1,7 @@
 #include "servidor_ublk.h"
 #include "alvo_ublk.h"
 #include <errno.h>
+#include <limits.h>
 #include <pthread.h>
 #include <signal.h>
 #include <ublksrv.h>
@@ -212,4 +213,42 @@ void ordenar_parada_do_servidor_ublk(int signal_recebido)
         servidor_em_exercicio->controle != 0) {
         ublksrv_ctrl_stop_dev(servidor_em_exercicio->controle);
     }
+}
+
+/*
+ * LEMMA DA PORTA DE CONTROLE
+ * Proposito: crear no núcleo o par de dispositivos ainda não publicado.
+ * Pre-condições: configuração cabe nas larguras impostas por ublk.
+ * Effeitos: adquire controle e acrescenta dispositivo.
+ * Retorno: zero no êxito ou erro negativo com limpeza na falha.
+ * Razão: a porta deve existir antes das filas, mas não recebe tráfego ainda.
+ */
+int abrir_controle_ublk(struct estado_do_servidor_ublk *servidor)
+{
+    struct ublksrv_dev_data dados = {0};
+    int resultado;
+
+    if (servidor == 0 || servidor->configuracao == 0 ||
+        servidor->configuracao->quantidade_de_filas > USHRT_MAX ||
+        servidor->configuracao->profundidade_das_filas > UBLK_MAX_QUEUE_DEPTH) {
+        return -EINVAL;
+    }
+    dados.dev_id = -1;
+    dados.max_io_buf_bytes =
+        servidor->configuracao->maior_operacao_em_bytes;
+    dados.nr_hw_queues =
+        (unsigned short)servidor->configuracao->quantidade_de_filas;
+    dados.queue_depth =
+        (unsigned short)servidor->configuracao->profundidade_das_filas;
+    dados.tgt_type = "vram_2_memory";
+    dados.tgt_ops = obter_operacoes_do_alvo_ublk();
+    dados.run_dir = ublksrv_get_pid_dir();
+    servidor->controle = ublksrv_ctrl_init(&dados);
+    if (servidor->controle == 0) return -ENODEV;
+    resultado = ublksrv_ctrl_add_dev(servidor->controle);
+    if (resultado < 0) {
+        ublksrv_ctrl_deinit(servidor->controle);
+        servidor->controle = 0;
+    }
+    return resultado;
 }

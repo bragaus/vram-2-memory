@@ -112,3 +112,37 @@ int configurar_parametros_ublk(struct estado_do_servidor_ublk *servidor)
         servidor->configuracao->capacidade_em_bytes >> 9;
     return ublksrv_ctrl_set_params(servidor->controle, &parametros);
 }
+
+/*
+ * THEOREMA DA ABERTURA DAS FILAS
+ * Proposito: dar a cada fila sua incumbência e seu fio exclusivo.
+ * Pre-condições: taboa dimensionada pela configuração e dispositivo vivo.
+ * Effeitos: cria fios até a primeira falha e conta quantos nasceram.
+ * Retorno: zero no êxito ou erro negativo conservando a contagem parcial.
+ * Razão: a contagem torna possível recolher exactamente o que nasceu.
+ */
+int iniciar_filas_ublk(struct estado_do_servidor_ublk *servidor,
+                       struct incumbencia_da_fila_ublk *incumbencias,
+                       uint32_t *quantidade_iniciada)
+{
+    int resultado;
+
+    if (servidor == 0 || incumbencias == 0 || quantidade_iniciada == 0) {
+        return -EINVAL;
+    }
+    *quantidade_iniciada = 0;
+    while (*quantidade_iniciada <
+           (uint32_t)servidor->configuracao->quantidade_de_filas) {
+        struct incumbencia_da_fila_ublk *incumbencia =
+            &incumbencias[*quantidade_iniciada];
+        incumbencia->servidor = servidor;
+        incumbencia->indice = (unsigned short)*quantidade_iniciada;
+        resultado = pthread_create(&incumbencia->fio_de_execucao, 0,
+                                   servir_fila_ublk, incumbencia);
+        if (resultado != 0) {
+            return -resultado;
+        }
+        (*quantidade_iniciada)++;
+    }
+    return 0;
+}

@@ -319,6 +319,10 @@ int preparar_servidor_ublk(struct estado_do_servidor_ublk *servidor,
         return -ENODEV;
     }
     resultado = configurar_parametros_ublk(servidor);
+    if (resultado == 0) {
+        /* A affinidade precede o nascimento dos fios que ella orientará. */
+        resultado = ublksrv_ctrl_get_affinity(servidor->controle);
+    }
     if (resultado < 0) desmontar_servidor_ublk(servidor);
     return resultado;
 }

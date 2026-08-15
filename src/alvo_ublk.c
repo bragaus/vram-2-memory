@@ -58,3 +58,49 @@ int transferir_requisicao_ublk(struct contexto_da_fila_ublk *contexto,
         return -EOPNOTSUPP;
     }
 }
+
+/*
+ * THEOREMA DA PASSAGEM UBLK
+ * Proposito: possuir, transportar e entregar uma requisição exterior.
+ * Pre-condições: fila e dados pertencem ao mesmo contexto publicado.
+ * Effeitos: conclue a etiqueta uma vez e só então a restitue.
+ * Retorno: zero na entrega ou erro negativo antes de nova busca.
+ * Razão: sectores são cercados antes da conversão para octetos.
+ */
+int tratar_requisicao_ublk(const struct ublksrv_queue *fila_exterior,
+                           const struct ublk_io_data *dados)
+{
+    struct contexto_da_fila_ublk *contexto;
+    const struct ublksrv_io_desc *descritor;
+    struct registro_da_requisicao *registro;
+    uint64_t deslocamento;
+    uint32_t quantidade;
+    uint8_t operacao;
+    void *memoria;
+    int resultado;
+
+    if (fila_exterior == 0 || dados == 0 || dados->iod == 0) return -EINVAL;
+    contexto = fila_exterior->private_data;
+    descritor = dados->iod;
+    if (contexto == 0 || contexto->fila == 0 || dados->tag < 0 ||
+        descritor->nr_sectors > UINT32_MAX / 512U ||
+        descritor->start_sector > UINT64_MAX / 512U) return -EINVAL;
+    quantidade = descritor->nr_sectors * 512U;
+    deslocamento = descritor->start_sector * 512ULL;
+    operacao = ublksrv_get_op(descritor);
+    memoria = ublksrv_queue_get_io_buf(fila_exterior, dados->tag);
+    if (quantidade != 0 && memoria == 0) return -EFAULT;
+    registro = iniciar_requisicao_na_fila(
+        contexto->fila, (uint32_t)dados->tag, deslocamento, quantidade,
+        operacao, memoria, ler_instante_monotonico());
+    if (registro == 0) return -EBUSY;
+    resultado = transferir_requisicao_ublk(
+        contexto, operacao, deslocamento, memoria, quantidade);
+    if (!concluir_requisicao_na_fila(
+            contexto->fila, (uint32_t)dados->tag, resultado)) return -EIO;
+    resultado = ublksrv_complete_io(fila_exterior,
+                                    (unsigned int)dados->tag, resultado);
+    if (resultado >= 0) rearmar_requisicao_na_fila(
+        contexto->fila, (uint32_t)dados->tag);
+    return resultado;
+}

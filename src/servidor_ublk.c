@@ -388,8 +388,8 @@ int preparar_servidor_ublk(struct estado_do_servidor_ublk *servidor,
  * Retorno: zero no termo regular ou a primeira falha negativa.
  * Razão: toda saída converge pela mesma successão inversa de limpeza.
  */
-int executar_servidor_ublk(
-    const struct configuracao_do_apparelho *configuracao)
+int executar_servidor_com_meio(
+    const struct configuracao_do_apparelho *configuracao, int empregar_cuda)
 {
     struct estado_do_servidor_ublk servidor = {0};
     struct incumbencia_da_fila_ublk *incumbencias;
@@ -397,7 +397,8 @@ int executar_servidor_ublk(
     int resultado;
     int resultado_do_desmonte;
 
-    resultado = preparar_servidor_ublk(&servidor, configuracao, 0);
+    resultado = preparar_servidor_ublk(
+        &servidor, configuracao, empregar_cuda);
     if (resultado < 0) return resultado;
     incumbencias = calloc(
         (size_t)configuracao->quantidade_de_filas, sizeof(*incumbencias));
@@ -426,4 +427,27 @@ int executar_servidor_ublk(
     resultado_do_desmonte = desmontar_servidor_ublk(&servidor);
     if (resultado == 0) resultado = resultado_do_desmonte;
     return resultado;
+}
+
+/*
+ * Proposito: servir a experiência ublk sobre RAM ordinária.
+ * Pre-condições: configuração válida. Effeitos: governa o serviço completo.
+ * Retorno: zero ou primeira falha. Razão: conserva a prova sem GPU.
+ */
+int executar_servidor_ublk(
+    const struct configuracao_do_apparelho *configuracao)
+{
+    return executar_servidor_com_meio(configuracao, 0);
+}
+
+/*
+ * Proposito: servir o apparelho ublk sobre VRAM e DMA CUDA.
+ * Pre-condições: configuração, GPU e dependências exteriores válidas.
+ * Effeitos: governa o serviço completo. Retorno: zero ou primeira falha.
+ * Razão: esta entrada activa correntes e buffers fixados em cada fila.
+ */
+int executar_servidor_cuda(
+    const struct configuracao_do_apparelho *configuracao)
+{
+    return executar_servidor_com_meio(configuracao, 1);
 }

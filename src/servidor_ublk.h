@@ -13,4 +13,14 @@
 int executar_servidor_ublk(
     const struct configuracao_do_apparelho *configuracao);
 
+/*
+ * Proposito: publicar e servir ublk sobre VRAM atravessada por DMA CUDA.
+ * Pre-condições: configuração válida, GPU, CUDA e libublksrv disponíveis.
+ * Effeitos: reserva VRAM, fixa buffers e serve até parada.
+ * Retorno: zero no termo regular ou erro negativo na primeira falha.
+ * Razão: esta entrada distingue a experiência RAM do apparelho real.
+ */
+int executar_servidor_cuda(
+    const struct configuracao_do_apparelho *configuracao);
+
 #endif

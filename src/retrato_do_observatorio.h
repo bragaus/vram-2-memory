@@ -51,4 +51,16 @@ int colher_retrato_do_observatorio(
     uint64_t instante_actual_em_nanossegundos,
     uint64_t instante_anterior_em_nanossegundos);
 
+/*
+ * Proposito: separar de dois retratos somente a marcha da última janella.
+ * Pre-condições: épocas ordenadas e contadores jamais regressivos.
+ * Effeitos: publica a differença apenas quando todas as ordens são válidas.
+ * Retorno: unidade no êxito e zero conservando o destino na recusa.
+ * Razão: razão por segundo exige incremento, não total desde o nascimento.
+ */
+int differenciar_retratos_do_observatorio(
+    struct retrato_do_observatorio *differenca,
+    const struct retrato_do_observatorio *actual,
+    const struct retrato_do_observatorio *anterior);
+
 #endif

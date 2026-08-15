@@ -1,5 +1,6 @@
 #include "monitor_do_observatorio.h"
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -90,4 +91,23 @@ static uint64_t calcular_por_segundo(uint64_t total,
     razao = (long double)total * 1000000000.0L /
             (long double)duracao_em_nanossegundos;
     return razao >= (long double)UINT64_MAX ? UINT64_MAX : (uint64_t)razao;
+}
+
+/*
+ * Proposito: dar número e unidade a um sensor ou declarar ignorância.
+ * Pre-condições: destino válido e capacidade positiva.
+ * Effeitos: escreve texto cercado e terminado em zero.
+ * Retorno: unidade no êxito e zero quando o texto não cabe.
+ * Razão: a marca de presença impede que zero se faça passar por medida.
+ */
+static int escrever_sensor(char *destino, size_t capacidade, int presente,
+                           uint32_t valor, const char *unidade)
+{
+    int escriptos;
+
+    if (destino == 0 || unidade == 0 || capacidade == 0) return 0;
+    escriptos = presente ?
+        snprintf(destino, capacidade, "%" PRIu32 " %s", valor, unidade) :
+        snprintf(destino, capacidade, "IGNORO");
+    return escriptos >= 0 && (size_t)escriptos < capacidade;
 }

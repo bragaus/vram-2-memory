@@ -284,3 +284,39 @@ int desmontar_servidor_ublk(struct estado_do_servidor_ublk *servidor)
     }
     return resultado;
 }
+
+/*
+ * THEOREMA DA PREPARACAO INTEGRAL
+ * Proposito: adquirir meio, controle, dispositivo e parâmetros antes das filas.
+ * Pre-condições: configuração válida e nenhum outro servidor em exercício.
+ * Effeitos: estabelece todas as camadas que antecedem os trabalhadores.
+ * Retorno: zero no êxito ou erro negativo depois de restituição completa.
+ * Razão: a publicação só virá quando toda memória e geometria existirem.
+ */
+int preparar_servidor_ublk(struct estado_do_servidor_ublk *servidor,
+                           const struct configuracao_do_apparelho *configuracao)
+{
+    int resultado;
+
+    if (servidor == 0 || !configuracao_do_apparelho_e_valida(configuracao) ||
+        servidor_em_exercicio != 0) return -EINVAL;
+    servidor->configuracao = configuracao;
+    if (!criar_meio_simulado(&servidor->meio,
+                             configuracao->capacidade_em_bytes)) {
+        return -ENOMEM;
+    }
+    servidor_em_exercicio = servidor;
+    resultado = abrir_controle_ublk(servidor);
+    if (resultado < 0) {
+        desmontar_servidor_ublk(servidor);
+        return resultado;
+    }
+    servidor->dispositivo = ublksrv_dev_init(servidor->controle);
+    if (servidor->dispositivo == 0) {
+        desmontar_servidor_ublk(servidor);
+        return -ENODEV;
+    }
+    resultado = configurar_parametros_ublk(servidor);
+    if (resultado < 0) desmontar_servidor_ublk(servidor);
+    return resultado;
+}

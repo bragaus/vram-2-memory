@@ -5,6 +5,10 @@ PROVAS := $(DIRECTORIO_DA_CONSTRUCAO)/provar_transicoes \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_configuracao \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_meio_simulado \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_fila_de_requisicoes
+FONTES_DO_SERVIDOR := src/principal.c src/servidor_ublk.c src/alvo_ublk.c \
+	src/configuracao.c src/estado_da_requisicao.c src/meio_simulado.c \
+	src/fila_de_requisicoes.c
+SERVIDOR := $(DIRECTORIO_DA_CONSTRUCAO)/vram-2-memory
 
 .PHONY: provar preparar_ublk limpar
 
@@ -30,10 +34,11 @@ $(DIRECTORIO_DA_CONSTRUCAO)/provar_fila_de_requisicoes: \
 		testes/provar_fila_de_requisicoes.c src/fila_de_requisicoes.c | $(DIRECTORIO_DA_CONSTRUCAO)
 	$(COMPILADOR) $(AVISOS) $^ -o $@
 
-preparar_ublk: $(DIRECTORIO_DA_CONSTRUCAO)/alvo_ublk.o
+preparar_ublk: $(SERVIDOR)
 
-$(DIRECTORIO_DA_CONSTRUCAO)/alvo_ublk.o: src/alvo_ublk.c | $(DIRECTORIO_DA_CONSTRUCAO)
-	$(COMPILADOR) $(AVISOS) $$(pkg-config --cflags ublksrv) -c $< -o $@
+$(SERVIDOR): $(FONTES_DO_SERVIDOR) | $(DIRECTORIO_DA_CONSTRUCAO)
+	$(COMPILADOR) $(AVISOS) $$(pkg-config --cflags ublksrv) $^ \
+		-o $@ $$(pkg-config --libs ublksrv) -pthread
 
 limpar:
-	rm -f $(PROVAS)
+	rm -f $(PROVAS) $(SERVIDOR)

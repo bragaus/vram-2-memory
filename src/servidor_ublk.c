@@ -55,6 +55,56 @@ static size_t descobrir_largura_do_observatorio(void)
         dimensao.ws_col != 0) return dimensao.ws_col;
     return 80;
 }
+
+/*
+ * THEOREMA DO OBSERVADOR FRIO
+ * Proposito: colher e mostrar retratos sem deter as filas.
+ * Pre-condições: servidor preparado, contadores vivos e configuração válida.
+ * Effeitos: escreve quadros periódicos até receber ordem atomica de termo.
+ * Retorno: o argumento original; perdas de saída tornam-se estatística.
+ * Razão: espera e apresentação vivem fora do caminho das requisições.
+ */
+static void *observar_servidor_ublk(void *argumento)
+{
+    struct estado_do_servidor_ublk *servidor = argumento;
+    struct retrato_do_observatorio retrato;
+    struct configuracao_do_monitor configuracao;
+    const struct timespec repouso = {1, 0};
+    uint64_t instante_anterior = ler_instante_monotonico();
+    char quadro[2048];
+
+    while (!atomic_load_explicit(&servidor->ordenar_termo_do_observatorio,
+                                 memory_order_relaxed)) {
+        uint64_t instante_actual = ler_instante_monotonico();
+        size_t tamanho;
+        ssize_t escriptos;
+
+        if (!colher_retrato_do_observatorio(
+                &retrato, servidor->contadores,
+                (size_t)servidor->configuracao->quantidade_de_filas,
+                instante_actual, instante_anterior)) break;
+        retrato.capacidade_em_bytes =
+            servidor->configuracao->capacidade_em_bytes;
+        retrato.memoria_da_gpu_reservada_em_bytes =
+            servidor->empregar_cuda ? retrato.capacidade_em_bytes : 0;
+        retrato.memoria_da_cpu_fixada_em_bytes =
+            (uint64_t)servidor->configuracao->quantidade_de_filas *
+            servidor->configuracao->profundidade_das_filas *
+            servidor->configuracao->maior_operacao_em_bytes;
+        configuracao.largura_em_colunas = descobrir_largura_do_observatorio();
+        configuracao.empregar_cor = isatty(STDERR_FILENO);
+        tamanho = escrever_quadro_do_observatorio(
+            quadro, sizeof(quadro), &retrato, &configuracao);
+        escriptos = tamanho == 0 ? -1 :
+            write(STDERR_FILENO, quadro, tamanho);
+        if (escriptos < 0 || (size_t)escriptos != tamanho)
+            atomic_fetch_add_explicit(&servidor->contadores[0].amostras_perdidas,
+                                      1, memory_order_relaxed);
+        instante_anterior = instante_actual;
+        nanosleep(&repouso, 0);
+    }
+    return argumento;
+}
 /*
  * LEMMA DA FIGURA DO ALVO
  * Proposito: declarar á libublksrv a capacidade e a disciplina das filas.

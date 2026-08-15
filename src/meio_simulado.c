@@ -84,3 +84,24 @@ int ler_meio_simulado(const struct meio_simulado *meio, uint64_t deslocamento,
            (size_t)quantidade_de_bytes);
     return 1;
 }
+
+/*
+ * THEOREMA DA ESCRIPTA CONTIDA
+ * Proposito: transportar uma região da origem para o reservatório.
+ * Pre-condições: meio vivo, origem não nula e intervallo válido.
+ * Effeitos: escreve somente na região consentida do meio.
+ * Retorno: unidade no êxito e zero sem copiar na recusa.
+ * Razão: leitura e escripta submettem-se á mesma fronteira geométrica.
+ */
+int escrever_meio_simulado(struct meio_simulado *meio, uint64_t deslocamento,
+                           const void *origem,
+                           uint32_t quantidade_de_bytes)
+{
+    if (origem == 0 || !intervallo_do_meio_e_valido(
+            meio, deslocamento, quantidade_de_bytes)) {
+        return 0;
+    }
+    memcpy(meio->memoria + (size_t)deslocamento, origem,
+           (size_t)quantidade_de_bytes);
+    return 1;
+}

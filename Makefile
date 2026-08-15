@@ -10,8 +10,9 @@ FONTES_DO_SERVIDOR := src/principal.c src/servidor_ublk.c src/alvo_ublk.c \
 	src/configuracao.c src/estado_da_requisicao.c src/meio_simulado.c \
 	src/meio_cuda.c src/fila_de_requisicoes.c
 SERVIDOR := $(DIRECTORIO_DA_CONSTRUCAO)/vram-2-memory
+PROVA_CUDA := $(DIRECTORIO_DA_CONSTRUCAO)/provar_meio_cuda
 
-.PHONY: provar preparar_ublk preparar_cuda limpar
+.PHONY: provar provar_cuda preparar_ublk preparar_cuda limpar
 
 provar: $(PROVAS)
 	@for prova in $(PROVAS); do $$prova; done
@@ -37,6 +38,12 @@ $(DIRECTORIO_DA_CONSTRUCAO)/provar_fila_de_requisicoes: \
 
 preparar_ublk: $(SERVIDOR)
 preparar_cuda: $(SERVIDOR)
+provar_cuda: $(PROVA_CUDA)
+	$(PROVA_CUDA)
+
+$(PROVA_CUDA): testes/provar_meio_cuda.c src/meio_cuda.c | $(DIRECTORIO_DA_CONSTRUCAO)
+	$(COMPILADOR) $(AVISOS) -I$(DIRECTORIO_DO_CUDA)/include $^ -o $@ \
+		-L$(DIRECTORIO_DO_CUDA)/lib64 -Wl,-rpath,$(DIRECTORIO_DO_CUDA)/lib64 -lcudart
 
 $(SERVIDOR): $(FONTES_DO_SERVIDOR) | $(DIRECTORIO_DA_CONSTRUCAO)
 	$(COMPILADOR) $(AVISOS) -I$(DIRECTORIO_DO_CUDA)/include \
@@ -45,4 +52,4 @@ $(SERVIDOR): $(FONTES_DO_SERVIDOR) | $(DIRECTORIO_DA_CONSTRUCAO)
 		-Wl,-rpath,$(DIRECTORIO_DO_CUDA)/lib64 -lcudart -pthread
 
 limpar:
-	rm -f $(PROVAS) $(SERVIDOR)
+	rm -f $(PROVAS) $(PROVA_CUDA) $(SERVIDOR)

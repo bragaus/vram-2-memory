@@ -128,11 +128,7 @@ int tratar_requisicao_ublk(const struct ublksrv_queue *fila_exterior,
     if (registro == 0) return -EBUSY;
     resultado = transferir_requisicao_ublk(
         contexto, operacao, deslocamento, memoria, quantidade);
-    if (!concluir_requisicao_na_fila(
-            contexto->fila, (uint32_t)dados->tag, resultado)) return -EIO;
-    resultado = ublksrv_complete_io(fila_exterior,
-                                    (unsigned int)dados->tag, resultado);
-    if (resultado >= 0) rearmar_requisicao_na_fila(
-        contexto->fila, (uint32_t)dados->tag);
-    return resultado;
+    return entregar_requisicao_ublk(
+        contexto, fila_exterior, (uint32_t)dados->tag, resultado,
+        ler_instante_monotonico());
 }

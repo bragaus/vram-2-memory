@@ -14,11 +14,15 @@ FONTES_DO_SERVIDOR := src/principal.c src/servidor_ublk.c src/alvo_ublk.c \
 	src/monitor_do_observatorio.c src/observador_de_si.c
 SERVIDOR := $(DIRECTORIO_DA_CONSTRUCAO)/vram-2-memory
 PROVA_CUDA := $(DIRECTORIO_DA_CONSTRUCAO)/provar_meio_cuda
+DEMONSTRACAO := $(DIRECTORIO_DA_CONSTRUCAO)/demonstrar_observatorio
 
-.PHONY: provar provar_cuda provar_pressao preparar_ublk preparar_cuda limpar
+.PHONY: provar demonstrar_simulacao provar_cuda provar_pressao preparar_ublk preparar_cuda limpar
 
 provar: $(PROVAS)
 	@for prova in $(PROVAS); do $$prova; done
+
+demonstrar_simulacao: $(DEMONSTRACAO)
+	$(DEMONSTRACAO)
 
 $(DIRECTORIO_DA_CONSTRUCAO):
 	mkdir -p $@
@@ -44,6 +48,11 @@ $(DIRECTORIO_DA_CONSTRUCAO)/provar_observatorio: testes/provar_observatorio.c \
 		src/observador_de_si.c | $(DIRECTORIO_DA_CONSTRUCAO)
 	$(COMPILADOR) $(AVISOS) $^ -o $@
 
+$(DEMONSTRACAO): demonstracoes/demonstrar_observatorio.c src/meio_simulado.c \
+		src/retrato_do_observatorio.c src/monitor_do_observatorio.c \
+		src/observador_de_si.c | $(DIRECTORIO_DA_CONSTRUCAO)
+	$(COMPILADOR) $(AVISOS) $^ -o $@
+
 preparar_ublk: $(SERVIDOR)
 preparar_cuda: $(SERVIDOR)
 provar_cuda: $(PROVA_CUDA)
@@ -63,4 +72,4 @@ $(SERVIDOR): $(FONTES_DO_SERVIDOR) | $(DIRECTORIO_DA_CONSTRUCAO)
 		-Wl,-rpath,$(DIRECTORIO_DO_CUDA)/lib64 -lcudart -pthread
 
 limpar:
-	rm -f $(PROVAS) $(PROVA_CUDA) $(SERVIDOR)
+	rm -f $(PROVAS) $(PROVA_CUDA) $(SERVIDOR) $(DEMONSTRACAO)

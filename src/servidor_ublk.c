@@ -105,6 +105,27 @@ static void *observar_servidor_ublk(void *argumento)
     }
     return argumento;
 }
+
+/*
+ * Proposito: fazer nascer o observador somente depois das filas preparadas.
+ * Pre-condições: servidor e taboa estatística permanecem vivos.
+ * Effeitos: inicia um fio frio e registra sua existência.
+ * Retorno: zero no êxito ou erro negativo de pthread_create.
+ * Razão: a marca só se publica depois que o fio realmente nasceu.
+ */
+static int iniciar_observatorio_ublk(struct estado_do_servidor_ublk *servidor)
+{
+    int resultado;
+
+    if (servidor == 0 || servidor->contadores == 0) return -EINVAL;
+    atomic_store_explicit(&servidor->ordenar_termo_do_observatorio, 0,
+                          memory_order_relaxed);
+    resultado = pthread_create(&servidor->fio_do_observatorio, 0,
+                               observar_servidor_ublk, servidor);
+    if (resultado != 0) return -resultado;
+    servidor->observatorio_iniciado = 1;
+    return 0;
+}
 /*
  * LEMMA DA FIGURA DO ALVO
  * Proposito: declarar á libublksrv a capacidade e a disciplina das filas.

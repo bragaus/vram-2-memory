@@ -13,6 +13,14 @@ struct contexto_da_fila_ublk {
 };
 
 /*
+ * Proposito: obter instante monotónico para abrir o prazo da requisição.
+ * Pre-condições: o systema fornece CLOCK_MONOTONIC.
+ * Effeitos: consulta o relógio. Retorno: nanossegundos, ou zero na falha.
+ * Razão: o calendário civil jámais governa o vencimento das filas.
+ */
+uint64_t ler_instante_monotonico(void);
+
+/*
  * Proposito: traduzir uma requisição ublk em leitura ou escripta do meio.
  * Pre-condições: fila, contexto, etiqueta e memória intermediária válidos.
  * Effeitos: possue a etiqueta, transporta octetos e conclue-a uma vez.

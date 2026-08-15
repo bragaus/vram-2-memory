@@ -81,7 +81,7 @@ comando, activará `swap` ou alterará a machina que contempla. **Q.E.D.**
 A experiência futura avançará por quatro portas, sommando dez horas de labor:
 
 1. `[✓]` linha de base portátil demonstrada com `make provar`;
-2. `[ ]` demonstrar em três horas o meio simulado e sua voz estatística;
+2. `[✓]` meio simulado e suas três vozes demonstrados sem privilégio;
 3. `[ ]` cercar em três horas a passagem CUDA com `compute-sanitizer`;
 4. `[ ]` publicar em duas horas um ublk pequeno, sem `fio` e sem `swap`.
 
@@ -107,3 +107,17 @@ configuração, meio simulado, filas e observatório devolveram êxito.
 
 **Limite conhecido:** GPU, CUDA, ublk, privilégios, `fio` e `swap` não foram
 tocados por esta demonstração. A primeira porta está verde. **Q.E.D.**
+
+## § IX. DO PALCO SEM PERIGO
+
+Executou-se `make demonstrar_simulacao`. A receita transportou dezasseis octetos
+pela RAM simulada, verificou-os byte a byte e apresentou duas operações por
+segundo com p99 de quatro microssegundos artificiaes.
+
+O mesmo retrato declarou `OBSERVEI`; sob limiar artificial de um microssegundo,
+declarou `INFERI` e citou p99 e limiar; envelhecido por três segundos, declarou
+`IGNORO` e publicou sua idade. A saída capturada não continha côr.
+
+**Limite conhecido:** as demoras pertencem ao roteiro determinístico, não a uma
+medição de desempenho real. GPU, CUDA, ublk e privilégios permaneceram ausentes.
+A segunda porta está verde. **Q.E.D.**

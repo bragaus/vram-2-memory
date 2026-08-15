@@ -131,7 +131,7 @@ int configurar_parametros_ublk(struct estado_do_servidor_ublk *servidor)
     if (servidor == 0 || servidor->controle == 0) return -EINVAL;
     parametros.len = sizeof(parametros);
     parametros.types = UBLK_PARAM_TYPE_BASIC | UBLK_PARAM_TYPE_DISCARD;
-    parametros.basic.attrs = UBLK_ATTR_VOLATILE_CACHE;
+    parametros.basic.attrs = UBLK_ATTR_VOLATILE_CACHE | UBLK_ATTR_FUA;
     parametros.basic.logical_bs_shift = 12;
     parametros.basic.physical_bs_shift = 12;
     parametros.basic.io_opt_shift = 12;

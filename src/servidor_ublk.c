@@ -7,7 +7,9 @@
 #include <signal.h>
 #include <stdatomic.h>
 #include <stdlib.h>
+#include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <time.h>
 #include <ublksrv.h>
 #include <ublksrv_utils.h>
 #include <unistd.h>
@@ -37,6 +39,22 @@ struct incumbencia_da_fila_ublk {
     int resultado;
 };
 static struct estado_do_servidor_ublk *servidor_em_exercicio;
+
+/*
+ * Proposito: descobrir novamente a largura concedida pelo terminal.
+ * Pre-condições: a saída de erros poderá ou não ser um terminal.
+ * Effeitos: consulta TIOCGWINSZ sem mudar o apparelho.
+ * Retorno: largura observada ou oitenta columnas na ignorância.
+ * Razão: cada quadro responde naturalmente a SIGWINCH na colheita seguinte.
+ */
+static size_t descobrir_largura_do_observatorio(void)
+{
+    struct winsize dimensao = {0};
+
+    if (ioctl(STDERR_FILENO, TIOCGWINSZ, &dimensao) == 0 &&
+        dimensao.ws_col != 0) return dimensao.ws_col;
+    return 80;
+}
 /*
  * LEMMA DA FIGURA DO ALVO
  * Proposito: declarar á libublksrv a capacidade e a disciplina das filas.

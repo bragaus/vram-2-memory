@@ -87,6 +87,45 @@ static int provar_quadro_sem_terminal(void)
 }
 
 /*
+ * Proposito: provar ignorância antiga, inferência causal e observação directa.
+ * Pre-condições: relógio e limiares artificiaes estão ordenados.
+ * Effeitos: escreve narrativas somente no destino local.
+ * Retorno: unidade se classe, causa e modos permanecerem fieis.
+ * Razão: o ornamento não poderá deslocar a fronteira do conhecimento.
+ */
+static int provar_voz_do_observador(void)
+{
+    struct retrato_do_observatorio retrato = {0};
+    struct configuracao_da_narracao configuracao = {
+        MODO_DA_NARRACAO_SOBRIO, 100, 10
+    };
+    char voz[256];
+
+    retrato.instante_monotonico_em_nanossegundos = 1000;
+    retrato.duracao_da_janella_em_nanossegundos = 100;
+    retrato.operacoes_concluidas = 3;
+    retrato.latencia_p99_em_microssegundos = 20;
+    if (julgar_certeza_do_observador(&retrato, &configuracao, 1200) !=
+            CERTEZA_IGNORO ||
+        narrar_observador_de_si(
+            voz, sizeof(voz), &retrato, &configuracao, 1200) == SIZE_MAX ||
+        strstr(voz, "[IGNORO]") == 0) return 0;
+    if (julgar_certeza_do_observador(&retrato, &configuracao, 1050) !=
+            CERTEZA_INFERI ||
+        narrar_observador_de_si(
+            voz, sizeof(voz), &retrato, &configuracao, 1050) == SIZE_MAX ||
+        strstr(voz, "p99=20") == 0) return 0;
+    retrato.latencia_p99_em_microssegundos = 1;
+    configuracao.modo = MODO_DA_NARRACAO_THEATRAL;
+    if (narrar_observador_de_si(
+            voz, sizeof(voz), &retrato, &configuracao, 1050) == SIZE_MAX ||
+        strstr(voz, "(@_@) [OBSERVEI]") == 0) return 0;
+    configuracao.modo = MODO_DA_NARRACAO_SILENCIOSO;
+    return narrar_observador_de_si(
+        voz, sizeof(voz), &retrato, &configuracao, 1050) == 0 && voz[0] == '\0';
+}
+
+/*
  * Proposito: reunir as demonstrações do observatório num resultado exterior.
  * Pre-condições: nenhuma. Effeitos: nenhum além do código de saída.
  * Retorno: zero se todas as proposições resistem, unidade na primeira queda.
@@ -95,5 +134,5 @@ static int provar_quadro_sem_terminal(void)
 int main(void)
 {
     return provar_figuras_breves() && provar_retrato_e_regressao() &&
-           provar_quadro_sem_terminal() ? 0 : 1;
+           provar_quadro_sem_terminal() && provar_voz_do_observador() ? 0 : 1;
 }

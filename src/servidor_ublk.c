@@ -87,6 +87,9 @@ void *servir_fila_ublk(void *argumento)
     /* A parada ordenada poderá romper a espera com código exterior negativo. */
     if (ublksrv_queue_is_done(fila_exterior)) {
         incumbencia->resultado = 0;
+    } else if (incumbencia->resultado < 0) {
+        /* Uma fila enferma ordena que suas irmãs também convirjam. */
+        ublksrv_ctrl_stop_dev(incumbencia->servidor->controle);
     }
     ublksrv_queue_deinit(fila_exterior);
     destruir_fila_de_requisicoes(&incumbencia->fila);

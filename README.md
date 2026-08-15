@@ -45,9 +45,9 @@ ou escripta pela BAR; ReBAR, DAX, NUMA e FUSE não pertencem a esta demonstraç�
 ## § IV. DO ESTADO PRESENTE — onde repousa a penna
 
 A configuração, o meio simulado, as filas ublk e o caminho CUDA acham-se
-escriptos. O simulador e a passagem CUDA foram provados; o servidor real foi
-compilado com `ublksrv 1.8`, mas ainda não publicou dispositivo algum. Consulte-se
-`LIVRO_DA_OBRA.md` antes de confiar-lhe um octeto.
+escriptos. O simulador, a passagem CUDA e um ublk efêmero de 256 MiB foram
+provados; o último nasceu sem formatação, montagem ou `swap` e foi removido no
+termo regular. Consulte-se `LIVRO_DA_OBRA.md` antes de confiar-lhe um octeto.
 
 ## § V. DO OBSERVATORIO — comandos reservados á futura experiência
 

@@ -83,7 +83,7 @@ A experiência futura avançará por quatro portas, sommando dez horas de labor:
 1. `[✓]` linha de base portátil demonstrada com `make provar`;
 2. `[✓]` meio simulado e suas três vozes demonstrados sem privilégio;
 3. `[✓]` passagem CUDA demonstrada sob `compute-sanitizer`;
-4. `[ ]` publicar em duas horas um ublk pequeno, sem `fio` e sem `swap`.
+4. `[✓]` publicar em duas horas um ublk pequeno, sem `fio` e sem `swap`.
 
 Cada porta depende da precedente e conservará comando, ambiente, resultado e
 limite conhecido. A primeira permanece impedida até que o Geometra revogue
@@ -168,4 +168,20 @@ guardada por esta obra.
 
 **Limite conhecido:** nenhum dispositivo foi creado e nenhum octeto foi
 exposto à camada de blocos. `fio`, formatação, montagem e `swap` continuam
-prohibidos nesta porta. A quarta porta permanece em curso. **Q.E.D.**
+prohibidos nesta porta. A quarta porta permanecia então em curso. **Q.E.D.**
+
+## § XIII. DA QUARTA PORTA
+
+A primeira tentativa descobriu que a instalação local não preparara
+`/run/ublksrvd`; o servidor passou a crear e validar essa morada antes do
+controle. Publicou-se então `/dev/ublkb0` com exactamente 268435456 octetos,
+uma fila, profundidade dezasseis e operação máxima de 65536 octetos.
+
+O observatório permaneceu responsivo e declarou três sondagens do systema,
+zero erros e zero prazos. `lsblk` confirmou bloco sem assinatura e sem ponto de
+montagem; a relação de `swap` não o continha. Não se executaram `fio`,
+formatação, montagem ou escripta deliberada.
+
+Ao sinal de interrupção, o servidor terminou com resultado zero e removeu
+`/dev/ublkb0`, `/dev/ublkc0` e seu registro de processo. A VRAM foi restituída.
+A quarta porta está verde. **Q.E.D.**

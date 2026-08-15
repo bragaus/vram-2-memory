@@ -2,6 +2,7 @@
 #include "alvo_ublk.h"
 #include <errno.h>
 #include <pthread.h>
+#include <signal.h>
 #include <ublksrv.h>
 
 /* O servidor reune a configuração, o meio e as duas faces do dispositivo. */
@@ -195,4 +196,20 @@ const struct ublksrv_tgt_type *obter_operacoes_do_alvo_ublk(void)
     };
 
     return &operacoes;
+}
+
+/*
+ * COROLLARIO DA ORDEM DE PARADA
+ * Proposito: converter a interrupção exterior em termo do dispositivo.
+ * Pre-condições: o servidor singular já publicou seu controle.
+ * Effeitos: solicita parada á libublksrv. Retorno: nenhum.
+ * Razão: o signal só aponta a porta pela qual os fios hão de convergir.
+ */
+void ordenar_parada_do_servidor_ublk(int signal_recebido)
+{
+    (void)signal_recebido;
+    if (servidor_em_exercicio != 0 &&
+        servidor_em_exercicio->controle != 0) {
+        ublksrv_ctrl_stop_dev(servidor_em_exercicio->controle);
+    }
 }

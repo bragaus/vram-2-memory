@@ -4,6 +4,7 @@
 #include "fila_de_requisicoes.h"
 #include "meio_cuda.h"
 #include "meio_simulado.h"
+#include "retrato_do_observatorio.h"
 
 #include <ublksrv.h>
 
@@ -12,6 +13,7 @@ struct contexto_da_fila_ublk {
     struct fila_de_requisicoes *fila;
     struct meio_simulado *meio_simulado;
     struct transportador_cuda *transportador_cuda;
+    struct contadores_da_fila *contadores;
     uint64_t prazo_em_nanossegundos;
 };
 

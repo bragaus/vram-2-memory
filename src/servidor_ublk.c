@@ -13,14 +13,17 @@
 struct estado_do_servidor_ublk {
     const struct configuracao_do_apparelho *configuracao;
     struct meio_simulado meio;
+    struct meio_cuda meio_cuda;
     struct ublksrv_ctrl_dev *controle;
     const struct ublksrv_dev *dispositivo;
+    int empregar_cuda;
 };
 /* Cada trabalhador possue fila autoral e fila exterior de igual índice. */
 struct incumbencia_da_fila_ublk {
     struct estado_do_servidor_ublk *servidor;
     struct fila_de_requisicoes fila;
     struct contexto_da_fila_ublk contexto;
+    struct transportador_cuda transportador_cuda;
     pthread_t fio_de_execucao;
     unsigned short indice;
     int resultado;

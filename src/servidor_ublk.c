@@ -150,3 +150,31 @@ int iniciar_filas_ublk(struct estado_do_servidor_ublk *servidor,
     }
     return 0;
 }
+
+/*
+ * COROLLARIO DA RECOLHA DAS FILAS
+ * Proposito: reunir todos os fios nascidos e conservar a primeira falha.
+ * Pre-condições: a quantidade é aquella contada durante a abertura.
+ * Effeitos: espera o termo de cada fio. Retorno: zero ou primeiro erro.
+ * Razão: nenhuma falha posterior deve occultar a causa mais antiga.
+ */
+int recolher_filas_ublk(struct incumbencia_da_fila_ublk *incumbencias,
+                        uint32_t quantidade)
+{
+    uint32_t indice;
+    int primeiro_resultado = 0;
+
+    if (incumbencias == 0 && quantidade != 0) return -EINVAL;
+    for (indice = 0; indice < quantidade; indice++) {
+        int resultado = pthread_join(
+            incumbencias[indice].fio_de_execucao, 0);
+        if (primeiro_resultado == 0 && resultado != 0) {
+            primeiro_resultado = -resultado;
+        }
+        if (primeiro_resultado == 0 &&
+            incumbencias[indice].resultado < 0) {
+            primeiro_resultado = incumbencias[indice].resultado;
+        }
+    }
+    return primeiro_resultado;
+}

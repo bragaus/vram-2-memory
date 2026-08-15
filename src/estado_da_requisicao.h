@@ -39,4 +39,13 @@ struct registro_da_requisicao {
     uint8_t operacao;
 };
 
+/*
+ * PROPOSICAO DA PASSAGEM LEGITIMA
+ *
+ * Domínio: duas posições enumeradas. Contra-domínio: unidade para passagem
+ * legítima e zero para prohibição. Effeitos: nenhum registro é transmudado.
+ */
+int transicao_da_requisicao_e_valida(enum estado_da_requisicao origem,
+                                     enum estado_da_requisicao destino);
+
 #endif

@@ -178,3 +178,21 @@ int recolher_filas_ublk(struct incumbencia_da_fila_ublk *incumbencias,
     }
     return primeiro_resultado;
 }
+
+/*
+ * LEMMA DAS OPERACOES DO ALVO
+ * Proposito: reunir as duas chamadas obrigatórias de libublksrv.
+ * Pre-condições: os contractos de inicialização e passagem permanecem vivos.
+ * Effeitos: nenhum. Retorno: endereço immutável da taboa singular.
+ * Razão: uma taboa estática jámais depende do tempo de vida da pilha.
+ */
+const struct ublksrv_tgt_type *obter_operacoes_do_alvo_ublk(void)
+{
+    static const struct ublksrv_tgt_type operacoes = {
+        .name = "vram_2_memory",
+        .init_tgt = inicializar_alvo_ublk,
+        .handle_io_async = tratar_requisicao_ublk
+    };
+
+    return &operacoes;
+}

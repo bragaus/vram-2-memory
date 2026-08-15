@@ -75,3 +75,20 @@ determinística, não allegação de consciência.
 Temperatura e potência serão facultativas; vazão, operações, erros, prazos,
 latências e amostras perdidas serão contractuaes. O observador jámais executará
 comando, activará `swap` ou alterará a machina que contempla. **Q.E.D.**
+
+## § VII. DA PRIMEIRA DEMONSTRAÇÃO
+
+A experiência futura avançará por quatro portas, sommando dez horas de labor:
+
+1. `[ ]` estabelecer em duas horas a linha de base portátil com `make provar`;
+2. `[ ]` demonstrar em três horas o meio simulado e sua voz estatística;
+3. `[ ]` cercar em três horas a passagem CUDA com `compute-sanitizer`;
+4. `[ ]` publicar em duas horas um ublk pequeno, sem `fio` e sem `swap`.
+
+Cada porta depende da precedente e conservará comando, ambiente, resultado e
+limite conhecido. A primeira permanece impedida até que o Geometra revogue
+expressamente a suspensão das execuções locaes; a terceira e a quarta reclamam
+machina apropriada, GPU observada e dados dispensáveis.
+
+Pressão de memória, `fio`, `mkswap` e `swapon` não pertencem a esta jornada.
+Nenhuma conveniência de palco poderá vencer esta fronteira. **Q.E.D.**

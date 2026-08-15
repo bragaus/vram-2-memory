@@ -40,11 +40,20 @@ struct registro_da_requisicao *iniciar_requisicao_na_fila(
 /*
  * Proposito: concluir uma vez a transferência indicada pela etiqueta.
  * Pre-condições: registro transferindo e resultado conhecido.
- * Effeitos: grava resultado e devolve a etiqueta á espera.
+ * Effeitos: grava resultado e conserva a etiqueta em conclusão.
  * Retorno: unidade na primeira conclusão e zero nas repetições.
  * Razão: somente transferindo atravessa o umbral da conclusão.
  */
 int concluir_requisicao_na_fila(struct fila_de_requisicoes *fila,
                                 uint32_t etiqueta, int resultado);
+
+/*
+ * Proposito: restituir a etiqueta depois da entrega exterior confirmada.
+ * Pre-condições: registro concluindo. Effeitos: passa a aguardando.
+ * Retorno: unidade na restituição e zero fora d'esse estado.
+ * Razão: jamais se reutiliza etiqueta antes da confirmação do núcleo.
+ */
+int rearmar_requisicao_na_fila(struct fila_de_requisicoes *fila,
+                               uint32_t etiqueta);
 
 #endif

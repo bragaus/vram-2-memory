@@ -104,3 +104,23 @@ int concluir_requisicao_na_fila(struct fila_de_requisicoes *fila,
     registro->estado = ESTADO_DA_REQUISICAO_CONCLUINDO;
     return 1;
 }
+
+/*
+ * COROLLARIO DA RESTITUICAO DA ETIQUETA
+ * Proposito: devolver á espera uma conclusão aceita pelo núcleo.
+ * Pre-condições: fila viva, etiqueta contida e registro concluindo.
+ * Effeitos: passa a aguardando. Retorno: unidade ou zero na recusa.
+ * Razão: a confirmação exterior precede necessariamente a reutilização.
+ */
+int rearmar_requisicao_na_fila(struct fila_de_requisicoes *fila,
+                               uint32_t etiqueta)
+{
+    if (fila == 0 || fila->registros == 0 ||
+        etiqueta >= fila->profundidade ||
+        fila->registros[etiqueta].estado !=
+            ESTADO_DA_REQUISICAO_CONCLUINDO) {
+        return 0;
+    }
+    fila->registros[etiqueta].estado = ESTADO_DA_REQUISICAO_AGUARDANDO;
+    return 1;
+}

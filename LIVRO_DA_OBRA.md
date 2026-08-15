@@ -82,7 +82,7 @@ A experiência futura avançará por quatro portas, sommando dez horas de labor:
 
 1. `[✓]` linha de base portátil demonstrada com `make provar`;
 2. `[✓]` meio simulado e suas três vozes demonstrados sem privilégio;
-3. `[ ]` cercar em três horas a passagem CUDA com `compute-sanitizer`;
+3. `[!]` passagem CUDA impedida pela ausência do respectivo instrumental;
 4. `[ ]` publicar em duas horas um ublk pequeno, sem `fio` e sem `swap`.
 
 Cada porta depende da precedente e conservará comando, ambiente, resultado e
@@ -121,3 +121,17 @@ declarou `INFERI` e citou p99 e limiar; envelhecido por três segundos, declarou
 **Limite conhecido:** as demoras pertencem ao roteiro determinístico, não a uma
 medição de desempenho real. GPU, CUDA, ublk e privilégios permaneceram ausentes.
 A segunda porta está verde. **Q.E.D.**
+
+## § X. DO INSTRUMENTAL AUSENTE
+
+A inspecção encontrou NVIDIA GeForce RTX 3060 com 12288 MiB, controlador
+580.159.03 e 11074 MiB livres. No instante observado, a GPU declarou 60 graus
+Celsius e consumo de 60,49 watts.
+
+Todavia, não existem no caminho `nvcc`, `compute-sanitizer`, `/usr/local/cuda`,
+`cuda_runtime_api.h` ou `libcudart.so`. Somente `libcuda.so`, entregue pelo
+controlador, está presente.
+
+Sem instalar o CUDA Toolkit compatível, não se pode construir nem sanear a
+prova CUDA. Nenhum pacote foi instalado e nenhuma carga alcançou a GPU. A
+terceira porta permanece impedida por facto exterior conhecido. **Q.E.D.**

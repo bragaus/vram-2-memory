@@ -133,7 +133,8 @@ size_t escrever_quadro_do_observatorio(char *destino, size_t capacidade,
     if (largura > 120) largura = 120;
     bytes = UINT64_MAX - retrato->bytes_lidos < retrato->bytes_escriptos ?
         UINT64_MAX : retrato->bytes_lidos + retrato->bytes_escriptos;
-    if (!desenhar_regua_ascii(regua, sizeof(regua), bytes,
+    if (!desenhar_regua_ascii(regua, sizeof(regua),
+            retrato->memoria_da_gpu_reservada_em_bytes,
             retrato->capacidade_em_bytes == 0 ? 1 : retrato->capacidade_em_bytes,
             largura - 16) ||
         !escrever_sensor(temperatura, sizeof(temperatura),
@@ -149,7 +150,7 @@ size_t escrever_quadro_do_observatorio(char *destino, size_t capacidade,
     cor = configuracao->empregar_cor ? "\033[36m" : "";
     fim_da_cor = configuracao->empregar_cor ? "\033[0m" : "";
     escriptos = snprintf(destino, capacidade,
-        "%s+-- OBSERVATORIO VRAM --+%s\n%s\nVazao: %" PRIu64
+        "%s+-- OBSERVATORIO VRAM --+%s\nMemoria: %s\nVazao: %" PRIu64
         " B/s | Operacoes: %" PRIu64 "/s\nLatencia us: p50=%" PRIu64
         " p95=%" PRIu64 " p99=%" PRIu64 "\nErros: %" PRIu64
         " | Prazos: %" PRIu64 " | Perdidas: %" PRIu64

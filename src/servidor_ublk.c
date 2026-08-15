@@ -126,6 +126,26 @@ static int iniciar_observatorio_ublk(struct estado_do_servidor_ublk *servidor)
     servidor->observatorio_iniciado = 1;
     return 0;
 }
+
+/*
+ * Proposito: ordenar o termo e recolher exactamente o observador nascido.
+ * Pre-condições: servidor válido; a marca declara a posse do fio.
+ * Effeitos: publica a ordem, reúne o fio e apaga a marca.
+ * Retorno: zero ou erro negativo de pthread_join.
+ * Razão: contadores só podem morrer depois que cessou quem os contempla.
+ */
+static int encerrar_observatorio_ublk(struct estado_do_servidor_ublk *servidor)
+{
+    int resultado;
+
+    if (servidor == 0) return -EINVAL;
+    if (!servidor->observatorio_iniciado) return 0;
+    atomic_store_explicit(&servidor->ordenar_termo_do_observatorio, 1,
+                          memory_order_relaxed);
+    resultado = pthread_join(servidor->fio_do_observatorio, 0);
+    servidor->observatorio_iniciado = 0;
+    return resultado == 0 ? 0 : -resultado;
+}
 /*
  * LEMMA DA FIGURA DO ALVO
  * Proposito: declarar á libublksrv a capacidade e a disciplina das filas.

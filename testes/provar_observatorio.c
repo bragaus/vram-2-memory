@@ -57,6 +57,36 @@ static int provar_retrato_e_regressao(void)
 }
 
 /*
+ * Proposito: demonstrar painel estreito, sem côr e honesto no sensor ausente.
+ * Pre-condições: retrato conhecido e destino largo para a prova.
+ * Effeitos: escreve somente no destino local.
+ * Retorno: unidade se números, ignorância e segurança forem visíveis.
+ * Razão: redirecionar a saída não poderá introduzir controle de terminal.
+ */
+static int provar_quadro_sem_terminal(void)
+{
+    struct retrato_do_observatorio retrato = {0};
+    const struct configuracao_do_monitor configuracao = {20, 0};
+    char quadro[1024];
+    size_t indice, tamanho;
+
+    retrato.duracao_da_janella_em_nanossegundos = 1000000000ULL;
+    retrato.capacidade_em_bytes = 16384;
+    retrato.bytes_lidos = 4096;
+    retrato.bytes_escriptos = 4096;
+    retrato.operacoes_concluidas = 2;
+    retrato.latencia_p99_em_microssegundos = 16;
+    tamanho = escrever_quadro_do_observatorio(
+        quadro, sizeof(quadro), &retrato, &configuracao);
+    if (tamanho == 0 || strstr(quadro, "Vazao: 8192 B/s") == 0 ||
+        strstr(quadro, "p99=16") == 0 ||
+        strstr(quadro, "temperatura=IGNORO") == 0) return 0;
+    for (indice = 0; indice < tamanho; ++indice)
+        if ((unsigned char)quadro[indice] == 27) return 0;
+    return 1;
+}
+
+/*
  * Proposito: reunir as demonstrações do observatório num resultado exterior.
  * Pre-condições: nenhuma. Effeitos: nenhum além do código de saída.
  * Retorno: zero se todas as proposições resistem, unidade na primeira queda.
@@ -64,5 +94,6 @@ static int provar_retrato_e_regressao(void)
  */
 int main(void)
 {
-    return provar_figuras_breves() && provar_retrato_e_regressao() ? 0 : 1;
+    return provar_figuras_breves() && provar_retrato_e_regressao() &&
+           provar_quadro_sem_terminal() ? 0 : 1;
 }

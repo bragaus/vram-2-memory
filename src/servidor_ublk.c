@@ -48,3 +48,41 @@ int inicializar_alvo_ublk(struct ublksrv_dev *dispositivo, int tipo,
     dispositivo->tgt.tgt_data = servidor_em_exercicio;
     return 0;
 }
+
+/*
+ * THEOREMA DO TRABALHADOR DA FILA
+ * Proposito: servir uma fila exterior no seu único fio de execução.
+ * Pre-condições: dispositivo e incumbência preparados antes do fio nascer.
+ * Effeitos: reserva registros, processa pedidos e restitue toda a fila.
+ * Retorno: o proprio argumento; o resultado fica gravado na incumbência.
+ * Razão: um só proprietário dispensa synchronização dentro de cada fila.
+ */
+void *servir_fila_ublk(void *argumento)
+{
+    struct incumbencia_da_fila_ublk *incumbencia = argumento;
+    const struct ublksrv_queue *fila_exterior;
+
+    incumbencia->resultado = -ENOMEM;
+    if (!criar_fila_de_requisicoes(
+            &incumbencia->fila,
+            incumbencia->servidor->configuracao->profundidade_das_filas)) {
+        return argumento;
+    }
+    incumbencia->contexto.fila = &incumbencia->fila;
+    incumbencia->contexto.meio = &incumbencia->servidor->meio;
+    fila_exterior = ublksrv_queue_init(
+        incumbencia->servidor->dispositivo, incumbencia->indice,
+        &incumbencia->contexto);
+    if (fila_exterior == 0) {
+        destruir_fila_de_requisicoes(&incumbencia->fila);
+        incumbencia->resultado = -ENODEV;
+        return argumento;
+    }
+    do {
+        incumbencia->resultado = ublksrv_process_io(fila_exterior);
+    } while (incumbencia->resultado >= 0 &&
+             !ublksrv_queue_is_done(fila_exterior));
+    ublksrv_queue_deinit(fila_exterior);
+    destruir_fila_de_requisicoes(&incumbencia->fila);
+    return argumento;
+}

@@ -288,8 +288,10 @@ int abrir_controle_ublk(struct estado_do_servidor_ublk *servidor)
         (unsigned short)servidor->configuracao->quantidade_de_filas;
     dados.queue_depth =
         (unsigned short)servidor->configuracao->profundidade_das_filas;
-    dados.tgt_type = "vram_2_memory";
-    dados.tgt_ops = obter_operacoes_do_alvo_ublk();
+    dados.tgt_type = servidor->empregar_cuda ?
+        "vram_2_memory_cuda" : "vram_2_memory";
+    dados.tgt_ops = servidor->empregar_cuda ?
+        obter_operacoes_do_alvo_cuda() : obter_operacoes_do_alvo_ublk();
     dados.run_dir = ublksrv_get_pid_dir();
     servidor->controle = ublksrv_ctrl_init(&dados);
     if (servidor->controle == 0) return -ENODEV;

@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 /*
  * LEMMA DO INTERVALLO CONTIDO
@@ -62,4 +63,24 @@ void destruir_meio_simulado(struct meio_simulado *meio)
     free(meio->memoria);
     meio->memoria = 0;
     meio->capacidade_em_bytes = 0;
+}
+
+/*
+ * THEOREMA DA LEITURA CONTIDA
+ * Proposito: transportar ao destino uma região inteira do reservatório.
+ * Pre-condições: meio vivo, destino não nulo e intervallo válido.
+ * Effeitos: escreve no destino; o meio permanece immutável.
+ * Retorno: unidade no êxito e zero sem copiar na recusa.
+ * Razão: o lemma antecede a conversão do deslocamento á medida nativa.
+ */
+int ler_meio_simulado(const struct meio_simulado *meio, uint64_t deslocamento,
+                      void *destino, uint32_t quantidade_de_bytes)
+{
+    if (destino == 0 || !intervallo_do_meio_e_valido(
+            meio, deslocamento, quantidade_de_bytes)) {
+        return 0;
+    }
+    memcpy(destino, meio->memoria + (size_t)deslocamento,
+           (size_t)quantidade_de_bytes);
+    return 1;
 }

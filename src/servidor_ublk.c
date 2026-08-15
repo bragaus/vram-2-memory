@@ -86,3 +86,29 @@ void *servir_fila_ublk(void *argumento)
     destruir_fila_de_requisicoes(&incumbencia->fila);
     return argumento;
 }
+
+/*
+ * LEMMA DOS PARAMETROS DO BLOCO
+ * Proposito: declarar capacidade, bloco e maior operação ao núcleo.
+ * Pre-condições: controle vivo e configuração já julgada.
+ * Effeitos: envia UBLK_CMD_SET_PARAMS. Retorno: resultado da bibliotheca.
+ * Razão: sectores de 512 octetos são exactos porque o bloco mede 4096.
+ */
+int configurar_parametros_ublk(struct estado_do_servidor_ublk *servidor)
+{
+    struct ublk_params parametros = {0};
+
+    if (servidor == 0 || servidor->controle == 0) return -EINVAL;
+    parametros.len = sizeof(parametros);
+    parametros.types = UBLK_PARAM_TYPE_BASIC;
+    parametros.basic.attrs = UBLK_ATTR_VOLATILE_CACHE;
+    parametros.basic.logical_bs_shift = 12;
+    parametros.basic.physical_bs_shift = 12;
+    parametros.basic.io_opt_shift = 12;
+    parametros.basic.io_min_shift = 12;
+    parametros.basic.max_sectors =
+        servidor->configuracao->maior_operacao_em_bytes >> 9;
+    parametros.basic.dev_sectors =
+        servidor->configuracao->capacidade_em_bytes >> 9;
+    return ublksrv_ctrl_set_params(servidor->controle, &parametros);
+}

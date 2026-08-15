@@ -10,6 +10,7 @@
 struct contexto_da_fila_ublk {
     struct fila_de_requisicoes *fila;
     struct meio_simulado *meio;
+    uint64_t prazo_em_nanossegundos;
 };
 
 /*

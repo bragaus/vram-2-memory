@@ -134,7 +134,7 @@ size_t escrever_quadro_do_observatorio(char *destino, size_t capacidade,
     bytes = UINT64_MAX - retrato->bytes_lidos < retrato->bytes_escriptos ?
         UINT64_MAX : retrato->bytes_lidos + retrato->bytes_escriptos;
     if (!desenhar_regua_ascii(regua, sizeof(regua),
-            retrato->memoria_da_gpu_reservada_em_bytes,
+            retrato->memoria_do_meio_reservada_em_bytes,
             retrato->capacidade_em_bytes == 0 ? 1 : retrato->capacidade_em_bytes,
             largura - 16) ||
         !escrever_sensor(temperatura, sizeof(temperatura),

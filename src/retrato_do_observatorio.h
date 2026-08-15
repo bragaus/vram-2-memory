@@ -32,7 +32,7 @@ struct retrato_do_observatorio {
     uint64_t latencia_p95_em_microssegundos;
     uint64_t latencia_p99_em_microssegundos;
     uint64_t capacidade_em_bytes;
-    uint64_t memoria_da_gpu_reservada_em_bytes;
+    uint64_t memoria_do_meio_reservada_em_bytes;
     uint64_t memoria_da_cpu_fixada_em_bytes;
     uint32_t temperatura_da_gpu_em_millicelsius;
     uint32_t potencia_da_gpu_em_milliwatts;

@@ -41,7 +41,7 @@ int main(void)
     retrato.instante_monotonico_em_nanossegundos = 1000000000ULL;
     retrato.duracao_da_janella_em_nanossegundos = 1000000000ULL;
     retrato.capacidade_em_bytes = 1048576;
-    retrato.memoria_da_gpu_reservada_em_bytes = 524288;
+    retrato.memoria_do_meio_reservada_em_bytes = 524288;
     retrato.bytes_lidos = 4096;
     retrato.operacoes_concluidas = 1;
     retrato.latencia_p99_em_microssegundos = 16;

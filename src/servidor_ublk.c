@@ -89,8 +89,8 @@ static void *observar_servidor_ublk(void *argumento)
                 instante_actual, instante_anterior)) break;
         retrato.capacidade_em_bytes =
             servidor->configuracao->capacidade_em_bytes;
-        retrato.memoria_da_gpu_reservada_em_bytes =
-            servidor->empregar_cuda ? retrato.capacidade_em_bytes : 0;
+        retrato.memoria_do_meio_reservada_em_bytes =
+            retrato.capacidade_em_bytes;
         retrato.memoria_da_cpu_fixada_em_bytes =
             (uint64_t)servidor->configuracao->quantidade_de_filas *
             servidor->configuracao->profundidade_das_filas *

@@ -20,10 +20,10 @@
 - `[!]` Filas ublk e conclusão única escriptas; execução suspensa.
 - `[!]` Meio CUDA e travessia DMA escriptos; execução suspensa.
 - `[!]` Pressão, `fio` e `swap` preparados; execução destructiva suspensa.
-- `[ ]` Retrato estatístico frio, apartado do caminho das requisições.
-- `[ ]` Monitor terminal com graphicos e estampas ASCII.
-- `[ ]` Papel `Observador de Si`, fiel á origem e idade das medidas.
-- `[ ]` Provas de legibilidade, segurança e degradação dos sensores.
+- `[!]` Retrato estatístico frio escripto; execução suspensa.
+- `[!]` Monitor terminal com graphicos e estampas ASCII escripto.
+- `[!]` Papel `Observador de Si` escripto; execução suspensa.
+- `[!]` Provas do observatório escriptas; execução suspensa.
 
 ## § III. DA PROPOSIÇÃO IMMEDIATA
 
@@ -52,6 +52,10 @@ machina até que o Geometra restitua licença às experiências.
 | `f7a719e` | VRAM, DMA e prova CUDA | GPU não experimentada |
 | `29438e0` | Rito de pressão e swap | prova destructiva não executada |
 | `04ff1b7` | Observatório público | comandos apenas documentados |
+| `f27ceb9` | Retrato estatístico frio | construção não executada |
+| `6c0cf3d` | Monitor terminal e estampas | construção não executada |
+| `1747f1d` | Papel Observador de Si | construção não executada |
+| `f815931` | Provas e revisão do observatório | artefactos não executados |
 
 **Limite conhecido:** nenhuma prova posterior a `75316ce` foi executada nesta
 machina. A penna avança às cegas sem converter conjectura em facto. **Q.E.D.**

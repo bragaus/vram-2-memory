@@ -115,3 +115,23 @@ int destruir_transportador_cuda(struct transportador_cuda *transportador)
     return resultado_da_synchronizacao == cudaSuccess &&
            resultado_da_destruicao == cudaSuccess;
 }
+
+/*
+ * THEOREMA DA MEMORIA INTERMEDIARIA FIXA
+ * Proposito: adquirir na CPU região que DMA possa alcançar directamente.
+ * Pre-condições: quantidade positiva.
+ * Effeitos: chama cudaHostAlloc com visibilidade entre contextos.
+ * Retorno: endereço fixado no êxito ou nulo na recusa.
+ * Razão: cudaMemcpyAsync só prova DMA sem estágio para memória fixada.
+ */
+void *reservar_memoria_intermediaria_cuda(uint32_t quantidade_de_bytes)
+{
+    void *memoria = 0;
+
+    if (quantidade_de_bytes == 0 ||
+        cudaHostAlloc(&memoria, (size_t)quantidade_de_bytes,
+                      cudaHostAllocPortable) != cudaSuccess) {
+        return 0;
+    }
+    return memoria;
+}

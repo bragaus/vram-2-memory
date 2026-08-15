@@ -44,10 +44,38 @@ ou escripta pela BAR; ReBAR, DAX, NUMA e FUSE não pertencem a esta demonstraç�
 
 ## § IV. DO ESTADO PRESENTE — onde repousa a penna
 
-A pesquisa e a especificação acham-se concluídas; o código ainda não nasceu.
-Primeiro demonstrar-se-ão a integridade byte a byte e o núcleo ublk simulado;
-depois virão CUDA, pressão de memória, medições e o delicado offício de `swap`.
-**Q.E.D.**
+A configuração, o meio simulado, as filas ublk e o caminho CUDA acham-se
+escriptos. Cada fila possue corrente própria; cada etiqueta recebe memória CPU
+fixada; leitura e escripta atravessam `cudaMemcpyAsync` antes da conclusão.
+
+Por ordem do Geometra, nenhuma parcela posterior ao contracto inicial foi
+compilada ou executada nesta machina. São conjecturas inspeccionadas, não factos
+experimentados; consulte-se `LIVRO_DA_OBRA.md` antes de confiar-lhes um octeto.
+
+## § V. DO OBSERVATORIO — comandos reservados á futura experiência
+
+Requerem-se `libublksrv`, cabeçalhos CUDA, `cudart`, uma GPU e permissão para
+fixar memória. A construção real, quando novamente consentida, será:
+
+```text
+make preparar_cuda DIRECTORIO_DO_CUDA=/usr/local/cuda
+sudo ./construcao/vram-2-memory 1073741824 1 64 1048576 5000 0
+```
+
+As grandezas são capacidade, filas, profundidade, maior operação, prazo em
+millisegundos e índice facultativo da GPU. O dispositivo publicado permanece
+volátil e não recebe dados cuja perda seja irreparável.
+
+**ADVERTÊNCIA DESTRUTIVA.** Somente depois de identificar exactamente o bloco
+ublk creado, a prova integral poderá ser expressamente destrancada:
+
+```text
+sudo -E make provar_pressao DISPOSITIVO=/dev/ublkbN CONFIRMAR_DESTRUICAO=SIM
+```
+
+Esse rito sobrescreve todo o dispositivo com `fio`, forma `swap` e produz
+pressão de memória. O nome exemplar `/dev/ublkbN` jámais deve ser copiado sem
+substituir `N` pelo número realmente publicado. **Q.E.D.**
 
 ```text
 
@@ -609,4 +637,3 @@ Você não precisa mais disso
 Você deveria realmente reconsiderar
 
 ```
-

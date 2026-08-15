@@ -70,7 +70,7 @@ int main(int quantidade_de_argumentos, char *argumentos[])
     configuracao.maior_operacao_em_bytes = (uint32_t)numeros[3];
     configuracao.prazo_da_operacao_em_milissegundos = (uint32_t)numeros[4];
     configuracao.indice_da_gpu = (int)numeros[5];
-    resultado = executar_servidor_ublk(&configuracao);
+    resultado = executar_servidor_cuda(&configuracao);
     if (resultado < 0) {
         fprintf(stderr, "O servidor fallou com o resultado %d.\n", resultado);
         return EXIT_FAILURE;

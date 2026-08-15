@@ -3,7 +3,8 @@ AVISOS := -std=c11 -Wall -Wextra -Wpedantic -Werror
 DIRECTORIO_DA_CONSTRUCAO := construcao
 PROVAS := $(DIRECTORIO_DA_CONSTRUCAO)/provar_transicoes \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_configuracao \
-	$(DIRECTORIO_DA_CONSTRUCAO)/provar_meio_simulado
+	$(DIRECTORIO_DA_CONSTRUCAO)/provar_meio_simulado \
+	$(DIRECTORIO_DA_CONSTRUCAO)/provar_fila_de_requisicoes
 
 .PHONY: provar limpar
 
@@ -23,6 +24,10 @@ $(DIRECTORIO_DA_CONSTRUCAO)/provar_configuracao: \
 
 $(DIRECTORIO_DA_CONSTRUCAO)/provar_meio_simulado: \
 		testes/provar_meio_simulado.c src/meio_simulado.c | $(DIRECTORIO_DA_CONSTRUCAO)
+	$(COMPILADOR) $(AVISOS) $^ -o $@
+
+$(DIRECTORIO_DA_CONSTRUCAO)/provar_fila_de_requisicoes: \
+		testes/provar_fila_de_requisicoes.c src/fila_de_requisicoes.c | $(DIRECTORIO_DA_CONSTRUCAO)
 	$(COMPILADOR) $(AVISOS) $^ -o $@
 
 limpar:

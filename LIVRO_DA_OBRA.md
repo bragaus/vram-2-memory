@@ -82,7 +82,7 @@ A experiência futura avançará por quatro portas, sommando dez horas de labor:
 
 1. `[✓]` linha de base portátil demonstrada com `make provar`;
 2. `[✓]` meio simulado e suas três vozes demonstrados sem privilégio;
-3. `[!]` passagem CUDA impedida pela ausência do respectivo instrumental;
+3. `[✓]` passagem CUDA demonstrada sob `compute-sanitizer`;
 4. `[ ]` publicar em duas horas um ublk pequeno, sem `fio` e sem `swap`.
 
 Cada porta depende da precedente e conservará comando, ambiente, resultado e
@@ -135,3 +135,21 @@ controlador, está presente.
 Sem instalar o CUDA Toolkit compatível, não se pode construir nem sanear a
 prova CUDA. Nenhum pacote foi instalado e nenhuma carga alcançou a GPU. A
 terceira porta permanece impedida por facto exterior conhecido. **Q.E.D.**
+
+## § XI. DA TRAVESSIA REAL
+
+Installou-se somente o CUDA Toolkit 12.9 em `~/.local/cuda-12.9`, sem `sudo` e
+sem substituir o controlador 580.159.03. O instalador official de 5,86 GB foi
+confrontado com o MD5 publicado pela NVIDIA antes da extracção.
+
+`make provar_cuda` reservou 8192 octetos de VRAM, transportou 4096 octetos por
+DMA em cada direcção, confrontou-os byte a byte e recusou duas regiões além do
+domínio. A prova terminou com êxito.
+
+`compute-sanitizer --tool memcheck --leak-check full` declarou zero octetos
+perdidos e zero erros. Após a experiência, a RTX 3060 declarou 11071 MiB livres,
+60 graus Celsius e 55,15 watts.
+
+**Limite conhecido:** demonstrou-se o meio CUDA isolado, não o servidor ublk.
+Nenhum privilégio, bloco, `fio` ou `swap` participou. A terceira porta está
+verde. **Q.E.D.**

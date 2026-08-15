@@ -26,7 +26,7 @@ void destruir_fila_de_requisicoes(struct fila_de_requisicoes *fila);
 
 /*
  * Proposito: entregar uma etiqueta aguardando a uma única operação.
- * Pre-condições: etiqueta contida e quantidade não vazia.
+ * Pre-condições: etiqueta contida; operações sem carga poderão medir zero.
  * Effeitos: registra grandezas e passa ao estado transferindo.
  * Retorno: ponteiro exclusivo, ou nulo se a etiqueta não repousava.
  * Razão: a mudança prévia de estado prohibe duas posses simultâneas.

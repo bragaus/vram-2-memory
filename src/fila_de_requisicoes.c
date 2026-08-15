@@ -47,7 +47,7 @@ void destruir_fila_de_requisicoes(struct fila_de_requisicoes *fila)
 /*
  * THEOREMA DA POSSE SINGULAR
  * Proposito: confiar uma etiqueta livre a exactamente uma transferência.
- * Pre-condições: fila viva, etiqueta contida e grandeza não vazia.
+ * Pre-condições: fila viva e etiqueta contida.
  * Effeitos: grava o percurso e muda aguardando para transferindo.
  * Retorno: registro adquirido, ou nulo sem alteração na recusa.
  * Razão: publicar o estado por derradeiro apresenta figura completa.
@@ -61,7 +61,7 @@ struct registro_da_requisicao *iniciar_requisicao_na_fila(
     struct registro_da_requisicao *registro;
 
     if (fila == 0 || fila->registros == 0 ||
-        etiqueta >= fila->profundidade || quantidade_de_bytes == 0) {
+        etiqueta >= fila->profundidade) {
         return 0;
     }
     registro = &fila->registros[etiqueta];

@@ -6,7 +6,7 @@ PROVAS := $(DIRECTORIO_DA_CONSTRUCAO)/provar_transicoes \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_meio_simulado \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_fila_de_requisicoes
 
-.PHONY: provar limpar
+.PHONY: provar preparar_ublk limpar
 
 provar: $(PROVAS)
 	@for prova in $(PROVAS); do $$prova; done
@@ -29,6 +29,11 @@ $(DIRECTORIO_DA_CONSTRUCAO)/provar_meio_simulado: \
 $(DIRECTORIO_DA_CONSTRUCAO)/provar_fila_de_requisicoes: \
 		testes/provar_fila_de_requisicoes.c src/fila_de_requisicoes.c | $(DIRECTORIO_DA_CONSTRUCAO)
 	$(COMPILADOR) $(AVISOS) $^ -o $@
+
+preparar_ublk: $(DIRECTORIO_DA_CONSTRUCAO)/alvo_ublk.o
+
+$(DIRECTORIO_DA_CONSTRUCAO)/alvo_ublk.o: src/alvo_ublk.c | $(DIRECTORIO_DA_CONSTRUCAO)
+	$(COMPILADOR) $(AVISOS) $$(pkg-config --cflags ublksrv) -c $< -o $@
 
 limpar:
 	rm -f $(PROVAS)

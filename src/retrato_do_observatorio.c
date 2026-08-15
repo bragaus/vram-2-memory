@@ -45,3 +45,27 @@ void registrar_operacao_observada(struct contadores_da_fila *contadores,
     if (resultado < 0)
         atomic_fetch_add_explicit(&contadores->erros, 1, memory_order_relaxed);
 }
+
+/*
+ * Proposito: approximar um percentil pelo primeiro degrau que o alcança.
+ * Pre-condições: histogramma contém oito sommas já consolidadas.
+ * Effeitos: nenhum. Retorno: limite superior em microssegundos.
+ * Razão: a posição inteira evita ponto fluctuante no observatório basal.
+ */
+static uint64_t calcular_percentil(const uint64_t *histogramma,
+                                  uint64_t total, uint64_t centesimos)
+{
+    static const uint64_t limites[] = {1, 4, 16, 64, 256, 1024, 4096, 16384};
+    uint64_t alvo;
+    uint64_t acumulado = 0;
+    size_t indice;
+
+    if (histogramma == 0 || total == 0 || centesimos == 0) return 0;
+    alvo = total / 100 * centesimos;
+    if (total % 100 * centesimos != 0) ++alvo;
+    for (indice = 0; indice < QUANTIDADE_DE_DEGRAUS_DA_LATENCIA; ++indice) {
+        acumulado += histogramma[indice];
+        if (acumulado >= alvo) return limites[indice];
+    }
+    return limites[QUANTIDADE_DE_DEGRAUS_DA_LATENCIA - 1];
+}

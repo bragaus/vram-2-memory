@@ -358,6 +358,8 @@ int preparar_servidor_ublk(struct estado_do_servidor_ublk *servidor,
             configuracao->capacidade_em_bytes)) ||
         (!servidor->empregar_cuda && !criar_meio_simulado(
             &servidor->meio, configuracao->capacidade_em_bytes))) {
+        destruir_meio_simulado(&servidor->meio);
+        destruir_meio_cuda(&servidor->meio_cuda);
         return -ENOMEM;
     }
     servidor_em_exercicio = servidor;

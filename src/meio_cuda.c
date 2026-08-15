@@ -25,13 +25,13 @@ int criar_meio_cuda(struct meio_cuda *meio, int indice_da_gpu,
             cudaSuccess) {
         return 0;
     }
-    if (cudaMemset(memoria, 0, (size_t)capacidade_em_bytes) != cudaSuccess) {
-        cudaFree(memoria);
-        return 0;
-    }
     meio->memoria_da_gpu = memoria;
     meio->capacidade_em_bytes = capacidade_em_bytes;
     meio->indice_da_gpu = indice_da_gpu;
+    if (cudaMemset(memoria, 0, (size_t)capacidade_em_bytes) != cudaSuccess) {
+        destruir_meio_cuda(meio);
+        return 0;
+    }
     return 1;
 }
 

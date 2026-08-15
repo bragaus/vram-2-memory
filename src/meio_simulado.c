@@ -46,3 +46,20 @@ int criar_meio_simulado(struct meio_simulado *meio,
     meio->capacidade_em_bytes = capacidade_em_bytes;
     return 1;
 }
+
+/*
+ * COROLLARIO DA RESTITUICAO
+ * Proposito: devolver a reserva e reduzir o registro á figura vazia.
+ * Pre-condições: nenhuma; o ponteiro nulo é operação sem effeito.
+ * Effeitos: liberta a memória possuída e apaga suas grandezas.
+ * Retorno: nenhum. Razão: o zero impede uso e libertação repetidos.
+ */
+void destruir_meio_simulado(struct meio_simulado *meio)
+{
+    if (meio == 0) {
+        return;
+    }
+    free(meio->memoria);
+    meio->memoria = 0;
+    meio->capacidade_em_bytes = 0;
+}

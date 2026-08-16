@@ -102,6 +102,13 @@ Esse rito sobrescreve todo o dispositivo com `fio`, forma `swap` e produz
 pressão de memória. O nome exemplar `/dev/ublkbN` jámais deve ser copiado sem
 substituir `N` pelo número realmente publicado. **Q.E.D.**
 
+## 📜 Licença
+
+[![License: CC BY 4.0](https://img.shields.io/badge/License-CC_BY_4.0-9cf?style=for-the-badge)](./LICENSE)
+
+Copia, remixa, vende, fecha o código, constrói o que caralhos você quiser em cima;
+A única exigência é crédito: **braga US**, você me sente?
+
 ```text
 
                                                                                                                                                         

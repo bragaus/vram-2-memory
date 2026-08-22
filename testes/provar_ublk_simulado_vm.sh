@@ -29,7 +29,7 @@ if [ ! -r "$kernel_da_vm" ]; then
     kernel_da_vm=$kernel_legivel
 fi
 
-for instrumento in qemu-system-x86_64 cpio gzip zstd cc make git ldd pkg-config; do
+for instrumento in qemu-system-x86_64 cpio gzip zstd cc make git ldd pkg-config sed; do
     if ! command -v "$instrumento" >/dev/null 2>&1; then
         echo "Instrumento ausente: $instrumento" >&2
         exit 2
@@ -57,6 +57,12 @@ mkdir -p "$raiz_do_initramfs/bin" "$raiz_do_initramfs/lib/modules"
 install -m 0755 /bin/busybox "$raiz_do_initramfs/bin/busybox"
 install -m 0755 "$directorio_da_vm/init" "$raiz_do_initramfs/init"
 install -m 0644 "$directorio_da_vm/configuracao.env" \
+    "$raiz_do_initramfs/configuracao.env"
+case "$DURACAO_DO_FIO_EM_SEGUNDOS" in
+    ''|*[!0-9]*) echo "Duração fio inválida." >&2; exit 4 ;;
+esac
+test "$DURACAO_DO_FIO_EM_SEGUNDOS" -gt 0
+sed -i "s/^DURACAO_DO_FIO_EM_SEGUNDOS=.*/DURACAO_DO_FIO_EM_SEGUNDOS=$DURACAO_DO_FIO_EM_SEGUNDOS/" \
     "$raiz_do_initramfs/configuracao.env"
 install -m 0755 "$raiz_da_obra/construcao/vramdiskd" \
     "$raiz_do_initramfs/bin/vramdiskd"

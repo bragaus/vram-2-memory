@@ -42,6 +42,8 @@ struct incumbencia_da_fila_ublk {
     int resultado;
 };
 static struct estado_do_servidor_ublk *servidor_em_exercicio;
+static pthread_mutex_t exclusao_do_governo = PTHREAD_MUTEX_INITIALIZER;
+static atomic_int termo_requerido;
 
 /*
  * LEMMA DO GABINETE DE EXECUCAO
@@ -421,6 +423,23 @@ void ordenar_parada_do_servidor_ublk(int sinal_recebido)
         servidor_em_exercicio->controle != 0) {
         ublksrv_ctrl_stop_dev(servidor_em_exercicio->controle);
     }
+}
+
+/*
+ * Proposito: conservar e cumprir uma ordem ordinária de termo.
+ * Pre-condições: nenhuma. Effeitos: marca o termo e para o controle existente.
+ * Retorno: zero. Razão: a exclusão impede corrida com o desmonte do controle.
+ */
+int ordenar_termo_do_servidor_ublk(void)
+{
+    atomic_store_explicit(&termo_requerido, 1, memory_order_relaxed);
+    (void)pthread_mutex_lock(&exclusao_do_governo);
+    if (servidor_em_exercicio != 0 &&
+        servidor_em_exercicio->controle != 0) {
+        ublksrv_ctrl_stop_dev(servidor_em_exercicio->controle);
+    }
+    (void)pthread_mutex_unlock(&exclusao_do_governo);
+    return 0;
 }
 
 /*

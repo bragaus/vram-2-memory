@@ -98,3 +98,20 @@ int receber_mensagem_de_governo(int descritor,
     destino->carga = carga;
     return 0;
 }
+
+/*
+ * Proposito: restituir a carga e reduzir a mensagem á figura vazia.
+ * Pre-condições: nenhuma; mensagem nula é termo regular.
+ * Effeitos: liberta a carga e apaga todas as grandezas.
+ * Retorno: nenhum. Razão: o zero torna segura a restituição repetida.
+ */
+void destruir_mensagem_de_governo(struct mensagem_de_governo *mensagem)
+{
+    if (mensagem == 0) return;
+    free(mensagem->carga);
+    mensagem->carga = 0;
+    mensagem->cabecalho.magia = 0;
+    mensagem->cabecalho.versao = 0;
+    mensagem->cabecalho.operacao = 0;
+    mensagem->cabecalho.quantidade_da_carga = 0;
+}

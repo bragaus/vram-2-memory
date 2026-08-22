@@ -16,7 +16,7 @@
 struct opcoes_do_servidor {
     const char *raiz;
     unsigned int indice;
-    int uma_audiencia;
+    unsigned int maximo_de_audiencias;
     int meio_simulado;
 };
 
@@ -45,8 +45,14 @@ int ler_opcoes_do_servidor(struct opcoes_do_servidor *destino,
             figura.raiz = argumentos[cursor + 1];
             cursor += 2;
         } else if (strcmp(argumentos[cursor], "--once") == 0) {
-            figura.uma_audiencia = 1;
+            figura.maximo_de_audiencias = 1;
             cursor++;
+        } else if (strcmp(argumentos[cursor], "--audiencias") == 0 &&
+                   cursor + 1 < quantidade - 1) {
+            if (!converter_numero_decimal(argumentos[cursor + 1], &indice) ||
+                indice == 0 || indice > UINT_MAX) return -ERANGE;
+            figura.maximo_de_audiencias = (unsigned int)indice;
+            cursor += 2;
         } else if (strcmp(argumentos[cursor], "--backend") == 0 &&
                    cursor + 1 < quantidade - 1) {
             if (strcmp(argumentos[cursor + 1], "simulado") == 0)
@@ -105,11 +111,12 @@ int main(int quantidade_de_argumentos, char *argumentos[])
     struct instancia_do_servidor instancia;
     int resultado;
     int resultado_do_termo;
+    unsigned int audiencias = 0;
 
     resultado = ler_opcoes_do_servidor(
         &opcoes, quantidade_de_argumentos, argumentos);
     if (resultado < 0) {
-        fprintf(stderr, "Uso: %s [--root RAIZ] [--backend cuda|simulado] [--once] ID\n",
+        fprintf(stderr, "Uso: %s [--root RAIZ] [--backend cuda|simulado] [--audiencias N|--once] ID\n",
                 argumentos[0]);
         return EXIT_FAILURE;
     }
@@ -127,9 +134,11 @@ int main(int quantidade_de_argumentos, char *argumentos[])
     do {
         resultado = atender_cliente_do_governo(
             instancia.tomada_servidora, &instancia.governo);
+        audiencias++;
         if (resultado < 0)
             fprintf(stderr, "A audiência fallou: %d.\n", resultado);
-    } while (resultado == 0 && !opcoes.uma_audiencia);
+    } while (resultado == 0 && (opcoes.maximo_de_audiencias == 0 ||
+             audiencias < opcoes.maximo_de_audiencias));
     resultado_do_termo = fechar_instancia_do_servidor(&instancia);
     if (resultado == 0) resultado = resultado_do_termo;
     return resultado == 0 ? EXIT_SUCCESS : EXIT_FAILURE;

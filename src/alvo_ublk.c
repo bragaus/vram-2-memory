@@ -49,21 +49,6 @@ uint64_t ler_instante_monotonico(void)
 }
 
 /*
- * LEMMA DA RESERVA EXTERIOR FIXA
- * Proposito: adaptar a acquisição CUDA á assinatura de libublksrv.
- * Pre-condições: tamanho positivo. Effeitos: reserva memória CPU fixada.
- * Retorno: endereço ou nulo. Razão: fila e etiqueta não mudam a grandeza.
- */
-void *reservar_memoria_ublk_cuda(const struct ublksrv_queue *fila_exterior,
-                                 int etiqueta, int tamanho)
-{
-    (void)fila_exterior;
-    (void)etiqueta;
-    if (tamanho <= 0) return 0;
-    return reservar_memoria_intermediaria_cuda((uint32_t)tamanho);
-}
-
-/*
  * COROLLARIO DA RESTITUICAO EXTERIOR
  * Proposito: adaptar cudaFreeHost á assinatura sem retorno da bibliotheca.
  * Pre-condições: memória fixada ou nula. Effeitos: restitue a região.

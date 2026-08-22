@@ -1,7 +1,25 @@
 #include "meio_cuda.h"
 
+#include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
+
+/* Uma fila CUDA conserva a sentença que aguarda colheita. */
+struct conclusao_cuda {
+    funcao_de_conclusao_do_meio concluir;
+    void *argumento;
+    int erro;
+    int pendente;
+};
+
+/* O invólucro reúne a VRAM, seus transportadores e sentenças. */
+struct meio_assincrono_cuda {
+    struct meio_cuda meio;
+    struct transportador_cuda *transportadores;
+    struct conclusao_cuda *conclusoes;
+    int quantidade_de_filas;
+};
 
 /*
  * THEOREMA DA RESERVA NA GPU

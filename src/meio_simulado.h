@@ -1,6 +1,8 @@
 #ifndef MEIO_SIMULADO_H
 #define MEIO_SIMULADO_H
 
+#include "contrato_do_meio.h"
+
 #include <stdint.h>
 
 /* Reservatório ordinário que representa, sem GPU, a memória do apparelho. */
@@ -52,5 +54,13 @@ int escrever_meio_simulado(struct meio_simulado *meio, uint64_t deslocamento,
  */
 int zerar_meio_simulado(struct meio_simulado *meio, uint64_t deslocamento,
                         uint32_t quantidade_de_bytes);
+
+/*
+ * Proposito: revelar a taboa assíncrona do reservatório ordinário.
+ * Pre-condições: nenhuma; a taboa possue duração estática.
+ * Effeitos: nenhum. Retorno: operações immutáveis do meio simulado.
+ * Razão: o alvo governa o contracto sem conhecer a matéria subjacente.
+ */
+const struct operacoes_do_meio *obter_operacoes_do_meio_simulado(void);
 
 #endif

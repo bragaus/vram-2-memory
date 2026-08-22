@@ -125,3 +125,17 @@ int provar_escripta_inteira_do_cabecalho(void)
         memcmp(destino, testemunho, sizeof(destino)) != 0) return 0;
     return 1;
 }
+
+/*
+ * Proposito: reunir todas as demonstrações portáteis do protocolo.
+ * Pre-condições: nenhuma; a prova não abre tomada nem toca o systema.
+ * Effeitos: somente reservas locaes breves. Retorno: zero ou unidade.
+ * Razão: uma única receita deverá fallir na primeira lei contradita.
+ */
+int main(void)
+{
+    return provar_mensagem_de_governo_valida() &&
+           provar_identidade_do_protocolo() &&
+           provar_extensao_da_mensagem() &&
+           provar_escripta_inteira_do_cabecalho() ? 0 : 1;
+}

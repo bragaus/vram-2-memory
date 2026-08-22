@@ -23,4 +23,13 @@ int executar_servidor_ublk(
 int executar_servidor_cuda(
     const struct configuracao_do_apparelho *configuracao);
 
+/*
+ * Proposito: ordenar por chamada ordinária o termo do servidor singular.
+ * Pre-condições: uma execução poderá estar nascendo, servindo ou terminando.
+ * Effeitos: conserva a ordem e solicita parada quando o controle já existe.
+ * Retorno: zero; a convergência pertence ao fio que executa o servidor.
+ * Razão: o governo local não deve fingir um signal para exercer sua vontade.
+ */
+int ordenar_termo_do_servidor_ublk(void);
+
 #endif

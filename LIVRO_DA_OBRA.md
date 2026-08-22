@@ -24,6 +24,8 @@
 - `[!]` Monitor terminal com graphicos e estampas ASCII escripto.
 - `[!]` Papel `Observador de Si` escripto; execução suspensa.
 - `[!]` Provas do observatório escriptas; execução suspensa.
+- `[✓]` Decisões de nascimento, memória fixada e prazo assentadas.
+- `[✓]` Contracto assíncrono commum demonstrado em simulador e CUDA.
 
 ## § III. DA PROPOSIÇÃO IMMEDIATA
 
@@ -185,3 +187,31 @@ formatação, montagem ou escripta deliberada.
 Ao sinal de interrupção, o servidor terminou com resultado zero e removeu
 `/dev/ublkb0`, `/dev/ublkc0` e seu registro de processo. A VRAM foi restituída.
 A quarta porta está verde. **Q.E.D.**
+
+## § XIV. DAS PRIMEIRAS LUZES DA SEGUNDA JORNADA
+
+Em XXII de Agosto de MMXXVI, o chamado #23 fixou três decisões sem fingir
+medida ainda inexistente: `vramdiskd` marcha em primeiro plano, a memória
+fixada obedece a `RLIMIT_MEMLOCK` e o prazo permanece declaração obrigatória
+até que a bancada o calibre.
+
+O chamado #24 lavrou uma taboa única para preparar, vincular, aquecer,
+transportar, zerar, colher e destruir qualquer meio. A RAM simulada e a VRAM
+CUDA passaram a cumprir a mesma promessa: submissão negativa não deixa
+sentença futura; submissão acceita entrega exactamente uma na fila possuidora.
+
+Executaram-se:
+
+```text
+make provar
+make provar_cuda DIRECTORIO_DO_CUDA=/home/bragaus/.local/cuda-12.9
+compute-sanitizer --tool memcheck --leak-check full ./construcao/provar_meio_cuda
+```
+
+As cinco provas portáteis e a travessia CUDA devolveram êxito; o saneador
+declarou zero erros e zero octetos perdidos. O servidor integral também ligou
+contra `ublksrv 1.8` e CUDA 12.9 com todos os avisos fataes.
+
+**Limite conhecido:** a fronteira é assíncrona, porém a execução CUDA ainda
+espera a corrente antes de armar sua sentença. Eventos por etiqueta pertencem
+ao chamado #30. Nenhum ublk, privilégio, `fio` ou `swap` participou. **Q.E.D.**

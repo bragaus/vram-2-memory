@@ -33,21 +33,33 @@ struct meio_assincrono_cuda {
 int criar_meio_cuda(struct meio_cuda *meio, int indice_da_gpu,
                     uint64_t capacidade_em_bytes)
 {
-    unsigned char *memoria;
+    CUdeviceptr memoria;
+    CUcontext contexto;
+    CUdevice dispositivo;
 
     if (meio == 0 || meio->memoria_da_gpu != 0 || indice_da_gpu < 0 ||
         capacidade_em_bytes == 0 || capacidade_em_bytes > SIZE_MAX) {
         return 0;
     }
-    if (cudaSetDevice(indice_da_gpu) != cudaSuccess ||
-        cudaMalloc((void **)&memoria, (size_t)capacidade_em_bytes) !=
-            cudaSuccess) {
+    if (cuInit(0) != CUDA_SUCCESS ||
+        cuDeviceGet(&dispositivo, indice_da_gpu) != CUDA_SUCCESS ||
+        cuDevicePrimaryCtxRetain(&contexto, dispositivo) != CUDA_SUCCESS) {
+        return 0;
+    }
+    if (cuCtxSetCurrent(contexto) != CUDA_SUCCESS) {
+        cuDevicePrimaryCtxRelease(dispositivo);
+        return 0;
+    }
+    if (cuMemAlloc(&memoria, (size_t)capacidade_em_bytes) != CUDA_SUCCESS) {
+        (void)cuCtxSetCurrent(0);
+        cuDevicePrimaryCtxRelease(dispositivo);
         return 0;
     }
     meio->memoria_da_gpu = memoria;
+    meio->contexto = contexto;
+    meio->dispositivo = dispositivo;
     meio->capacidade_em_bytes = capacidade_em_bytes;
-    meio->indice_da_gpu = indice_da_gpu;
-    if (cudaMemset(memoria, 0, (size_t)capacidade_em_bytes) != cudaSuccess) {
+    if (cuMemsetD8(memoria, 0, (size_t)capacidade_em_bytes) != CUDA_SUCCESS) {
         destruir_meio_cuda(meio);
         return 0;
     }
@@ -60,43 +72,60 @@ int criar_meio_cuda(struct meio_cuda *meio, int indice_da_gpu,
  * Pre-condições: nenhuma; meio nulo ou vazio é termo regular.
  * Effeitos: escolhe a GPU, liberta VRAM e zera o registro.
  * Retorno: unidade no termo ou zero se CUDA conservar a posse.
- * Razão: o registro só se apaga depois da confirmação de cudaFree.
+ * Razão: o registro só se apaga depois da confirmação de cuMemFree.
  */
 int destruir_meio_cuda(struct meio_cuda *meio)
 {
-    if (meio == 0 || meio->memoria_da_gpu == 0) {
+    CUresult resultado_do_desligamento;
+
+    if (meio == 0 || meio->contexto == 0) {
         return 1;
     }
-    if (cudaSetDevice(meio->indice_da_gpu) != cudaSuccess ||
-        cudaFree(meio->memoria_da_gpu) != cudaSuccess) {
+    if (cuCtxSetCurrent(meio->contexto) != CUDA_SUCCESS ||
+        (meio->memoria_da_gpu != 0 &&
+         cuMemFree(meio->memoria_da_gpu) != CUDA_SUCCESS)) {
         return 0;
     }
     meio->memoria_da_gpu = 0;
     meio->capacidade_em_bytes = 0;
-    meio->indice_da_gpu = 0;
-    return 1;
+    resultado_do_desligamento = cuCtxSetCurrent(0);
+    if (cuDevicePrimaryCtxRelease(meio->dispositivo) != CUDA_SUCCESS) return 0;
+    meio->contexto = 0;
+    meio->dispositivo = 0;
+    return resultado_do_desligamento == CUDA_SUCCESS;
+}
+
+/*
+ * LEMMA DO CONTEXTO PRESENTE
+ * Proposito: assentar no fio corrente o contexto primário possuidor da VRAM.
+ * Pre-condições: meio vivo. Effeitos: muda o contexto CUDA corrente do fio.
+ * Retorno: unidade no êxito ou zero. Razão: a Driver API governa cada fio.
+ */
+static int escolher_contexto_cuda(const struct meio_cuda *meio)
+{
+    return meio != 0 && meio->contexto != 0 &&
+           cuCtxSetCurrent(meio->contexto) == CUDA_SUCCESS;
 }
 
 /*
  * THEOREMA DA CORRENTE EXCLUSIVA
  * Proposito: preparar uma corrente não bloqueante para uma só fila.
  * Pre-condições: transportador vazio e meio vivo.
- * Effeitos: escolhe a GPU e adquire cudaStream_t.
+ * Effeitos: assenta o contexto e adquire CUstream.
  * Retorno: unidade no êxito ou zero sem estado parcial.
  * Razão: a corrente ordinária introduziria dependências entre filas irmãs.
  */
 int criar_transportador_cuda(struct transportador_cuda *transportador,
                              struct meio_cuda *meio)
 {
-    cudaStream_t corrente;
+    CUstream corrente;
 
     if (transportador == 0 || transportador->corrente != 0 || meio == 0 ||
         meio->memoria_da_gpu == 0) {
         return 0;
     }
-    if (cudaSetDevice(meio->indice_da_gpu) != cudaSuccess ||
-        cudaStreamCreateWithFlags(&corrente, cudaStreamNonBlocking) !=
-            cudaSuccess) {
+    if (!escolher_contexto_cuda(meio) ||
+        cuStreamCreate(&corrente, CU_STREAM_NON_BLOCKING) != CUDA_SUCCESS) {
         return 0;
     }
     transportador->meio = meio;
@@ -114,42 +143,40 @@ int criar_transportador_cuda(struct transportador_cuda *transportador,
  */
 int destruir_transportador_cuda(struct transportador_cuda *transportador)
 {
-    cudaError_t resultado_da_synchronizacao;
-    cudaError_t resultado_da_destruicao;
+    CUresult resultado_da_synchronizacao;
+    CUresult resultado_da_destruicao;
 
     if (transportador == 0 || transportador->corrente == 0) {
         return 1;
     }
-    if (transportador->meio == 0 ||
-        cudaSetDevice(transportador->meio->indice_da_gpu) != cudaSuccess) {
+    if (!escolher_contexto_cuda(transportador->meio)) {
         return 0;
     }
-    resultado_da_synchronizacao =
-        cudaStreamSynchronize(transportador->corrente);
-    resultado_da_destruicao = cudaStreamDestroy(transportador->corrente);
-    if (resultado_da_destruicao == cudaSuccess) {
+    resultado_da_synchronizacao = cuStreamSynchronize(transportador->corrente);
+    resultado_da_destruicao = cuStreamDestroy(transportador->corrente);
+    if (resultado_da_destruicao == CUDA_SUCCESS) {
         transportador->corrente = 0;
         transportador->meio = 0;
     }
-    return resultado_da_synchronizacao == cudaSuccess &&
-           resultado_da_destruicao == cudaSuccess;
+    return resultado_da_synchronizacao == CUDA_SUCCESS &&
+           resultado_da_destruicao == CUDA_SUCCESS;
 }
 
 /*
  * THEOREMA DA MEMORIA INTERMEDIARIA FIXA
  * Proposito: adquirir na CPU região que DMA possa alcançar directamente.
- * Pre-condições: quantidade positiva.
- * Effeitos: chama cudaHostAlloc com visibilidade entre contextos.
+ * Pre-condições: contexto CUDA corrente e quantidade positiva.
+ * Effeitos: chama cuMemHostAlloc com visibilidade entre contextos.
  * Retorno: endereço fixado no êxito ou nulo na recusa.
- * Razão: cudaMemcpyAsync só prova DMA sem estágio para memória fixada.
+ * Razão: cópia assíncrona só prova DMA sem estágio para memória fixada.
  */
 void *reservar_memoria_intermediaria_cuda(uint32_t quantidade_de_bytes)
 {
     void *memoria = 0;
 
     if (quantidade_de_bytes == 0 ||
-        cudaHostAlloc(&memoria, (size_t)quantidade_de_bytes,
-                      cudaHostAllocPortable) != cudaSuccess) {
+        cuMemHostAlloc(&memoria, (size_t)quantidade_de_bytes,
+                       CU_MEMHOSTALLOC_PORTABLE) != CUDA_SUCCESS) {
         return 0;
     }
     return memoria;
@@ -173,8 +200,8 @@ void *reservar_memoria_exterior_cuda(
 /*
  * COROLLARIO DA RESTITUICAO INTERMEDIARIA
  * Proposito: devolver á execução CUDA uma região CPU fixada.
- * Pre-condições: endereço nasceu de cudaHostAlloc ou é nulo.
- * Effeitos: chama cudaFreeHost. Retorno: unidade ou zero na recusa.
+ * Pre-condições: contexto corrente; endereço nasceu de cuMemHostAlloc ou nulo.
+ * Effeitos: chama cuMemFreeHost. Retorno: unidade ou zero na recusa.
  * Razão: o nulo não representa posse e, portanto, já está restituído.
  */
 int destruir_memoria_intermediaria_cuda(void *memoria)
@@ -182,12 +209,12 @@ int destruir_memoria_intermediaria_cuda(void *memoria)
     if (memoria == 0) {
         return 1;
     }
-    return cudaFreeHost(memoria) == cudaSuccess;
+    return cuMemFreeHost(memoria) == CUDA_SUCCESS;
 }
 
 /*
  * COROLLARIO DA RESTITUIÇÃO EXTERIOR
- * Proposito: adaptar cudaFreeHost á assinatura sem retorno da bibliotheca.
+ * Proposito: adaptar cuMemFreeHost á assinatura sem retorno da bibliotheca.
  * Pre-condições: memória fixada ou nula. Effeitos: restitue a região.
  * Retorno: nenhum. Razão: fila e etiqueta não participam da posse material.
  */
@@ -219,7 +246,7 @@ static int regiao_cuda_e_valida(const struct transportador_cuda *transportador,
  * THEOREMA DA LEITURA POR DMA
  * Proposito: mover região da VRAM para destino CPU fixado.
  * Pre-condições: transportador vivo, destino fixado e região contida.
- * Effeitos: submette cudaMemcpyAsync e synchroniza a corrente.
+ * Effeitos: submette cuMemcpyDtoHAsync e synchroniza a corrente.
  * Retorno: unidade somente se submissão e termo alcançam êxito.
  * Razão: a conclusão posterior só reutilizará memória já preenchida.
  */
@@ -229,20 +256,19 @@ int ler_meio_cuda(struct transportador_cuda *transportador,
 {
     if (destino == 0 || !regiao_cuda_e_valida(
             transportador, deslocamento, quantidade_de_bytes)) return 0;
-    if (cudaSetDevice(transportador->meio->indice_da_gpu) != cudaSuccess ||
-        cudaMemcpyAsync(destino,
-                        transportador->meio->memoria_da_gpu +
-                            (size_t)deslocamento,
-                        (size_t)quantidade_de_bytes, cudaMemcpyDeviceToHost,
-                        transportador->corrente) != cudaSuccess) return 0;
-    return cudaStreamSynchronize(transportador->corrente) == cudaSuccess;
+    if (!escolher_contexto_cuda(transportador->meio) ||
+        cuMemcpyDtoHAsync(destino, transportador->meio->memoria_da_gpu +
+                                      deslocamento,
+                          (size_t)quantidade_de_bytes,
+                          transportador->corrente) != CUDA_SUCCESS) return 0;
+    return cuStreamSynchronize(transportador->corrente) == CUDA_SUCCESS;
 }
 
 /*
  * THEOREMA DA ESCRIPTA POR DMA
  * Proposito: mover origem CPU fixada para uma região da VRAM.
  * Pre-condições: transportador vivo, origem fixada e região contida.
- * Effeitos: submette cudaMemcpyAsync e synchroniza a corrente.
+ * Effeitos: submette cuMemcpyHtoDAsync e synchroniza a corrente.
  * Retorno: unidade somente se submissão e termo alcançam êxito.
  * Razão: a conclusão posterior só poderá expor dados já depositados.
  */
@@ -252,20 +278,18 @@ int escrever_meio_cuda(struct transportador_cuda *transportador,
 {
     if (origem == 0 || !regiao_cuda_e_valida(
             transportador, deslocamento, quantidade_de_bytes)) return 0;
-    if (cudaSetDevice(transportador->meio->indice_da_gpu) != cudaSuccess ||
-        cudaMemcpyAsync(transportador->meio->memoria_da_gpu +
-                            (size_t)deslocamento,
-                        origem, (size_t)quantidade_de_bytes,
-                        cudaMemcpyHostToDevice,
-                        transportador->corrente) != cudaSuccess) return 0;
-    return cudaStreamSynchronize(transportador->corrente) == cudaSuccess;
+    if (!escolher_contexto_cuda(transportador->meio) ||
+        cuMemcpyHtoDAsync(transportador->meio->memoria_da_gpu + deslocamento,
+                          origem, (size_t)quantidade_de_bytes,
+                          transportador->corrente) != CUDA_SUCCESS) return 0;
+    return cuStreamSynchronize(transportador->corrente) == CUDA_SUCCESS;
 }
 
 /*
  * COROLLARIO DA REGIAO CUDA NULA
  * Proposito: apagar região de VRAM sem reservar memória intermediária.
  * Pre-condições: transportador vivo e região contida.
- * Effeitos: submette cudaMemsetAsync e synchroniza a corrente.
+ * Effeitos: submette cuMemsetD8Async e synchroniza a corrente.
  * Retorno: unidade somente se submissão e termo alcançam êxito.
  * Razão: descarte e zero explícito convergem no meio volátil.
  */
@@ -274,12 +298,11 @@ int zerar_meio_cuda(struct transportador_cuda *transportador,
 {
     if (!regiao_cuda_e_valida(
             transportador, deslocamento, quantidade_de_bytes)) return 0;
-    if (cudaSetDevice(transportador->meio->indice_da_gpu) != cudaSuccess ||
-        cudaMemsetAsync(transportador->meio->memoria_da_gpu +
-                            (size_t)deslocamento,
+    if (!escolher_contexto_cuda(transportador->meio) ||
+        cuMemsetD8Async(transportador->meio->memoria_da_gpu + deslocamento,
                         0, (size_t)quantidade_de_bytes,
-                        transportador->corrente) != cudaSuccess) return 0;
-    return cudaStreamSynchronize(transportador->corrente) == cudaSuccess;
+                        transportador->corrente) != CUDA_SUCCESS) return 0;
+    return cuStreamSynchronize(transportador->corrente) == CUDA_SUCCESS;
 }
 
 /*

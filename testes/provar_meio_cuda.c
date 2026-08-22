@@ -32,16 +32,18 @@ int provar_contrato_assincrono_cuda(void)
     struct configuracao_do_apparelho configuracao = {0};
     struct testemunho_da_conclusao_cuda testemunho = {0};
     const struct operacoes_do_meio *operacoes = obter_operacoes_do_meio_cuda();
-    unsigned char *memoria = reservar_memoria_intermediaria_cuda(4096);
+    unsigned char *memoria = 0;
     void *contexto = 0;
     int resultado = 0;
 
     configuracao.indice_da_gpu = 0;
     configuracao.capacidade_em_bytes = 4096;
     configuracao.quantidade_de_filas = 1;
-    if (memoria == 0 || operacoes == 0 ||
+    if (operacoes == 0 ||
         operacoes->preparar(&contexto, &configuracao) < 0 ||
         operacoes->vincular_fila(contexto, 0) < 0) goto termo;
+    memoria = reservar_memoria_intermediaria_cuda(4096);
+    if (memoria == 0) goto termo;
     memoria[0] = 29;
     if (operacoes->escrever(contexto, 0, 0, memoria, 1,
                             testemunhar_conclusao_cuda, &testemunho) < 0 ||
@@ -52,8 +54,8 @@ int provar_contrato_assincrono_cuda(void)
     resultado = 1;
 
 termo:
-    if (contexto != 0) operacoes->destruir(contexto);
     if (!destruir_memoria_intermediaria_cuda(memoria)) resultado = 0;
+    if (contexto != 0) operacoes->destruir(contexto);
     return resultado;
 }
 

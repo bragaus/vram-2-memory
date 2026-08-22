@@ -52,6 +52,16 @@ int escrever_cabecalho_de_governo(unsigned char *destino, size_t capacidade,
                                   uint16_t operacao, uint32_t carga);
 
 /*
+ * Proposito: julgar somente os doze octetos do cabeçalho exterior.
+ * Pre-condições: quantidade declara os octetos actualmente disponíveis.
+ * Effeitos: publica o destino somente depois de validar todos os campos.
+ * Retorno: zero no êxito ou erro negativo sem leitura fora do domínio.
+ * Razão: a tomada precisa conhecer a carga antes de a poder receber.
+ */
+int ler_cabecalho_de_governo(struct cabecalho_de_governo *destino,
+                             const unsigned char *origem, size_t quantidade);
+
+/*
  * Proposito: julgar uma mensagem inteira e publicar seu cabeçalho nativo.
  * Pre-condições: quantidade declara exactamente os octetos disponíveis.
  * Effeitos: altera o destino somente depois de todas as provas.

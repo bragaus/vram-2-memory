@@ -53,6 +53,38 @@ int escrever_cabecalho_de_governo(unsigned char *destino, size_t capacidade,
 }
 
 /*
+ * THEOREMA DA LEITURA DO CABEÇALHO
+ * Proposito: converter os doze octetos que declaram a mensagem futura.
+ * Pre-condições: quantidade mede a porção actualmente recebida.
+ * Effeitos: publica o destino somente para campos integralmente válidos.
+ * Retorno: zero no êxito ou erro negativo sem leitura além da porção.
+ * Razão: a carga deve ser conhecida antes que a tomada a possa reservar.
+ */
+int ler_cabecalho_de_governo(struct cabecalho_de_governo *destino,
+                             const unsigned char *origem, size_t quantidade)
+{
+    struct cabecalho_de_governo figura;
+
+    if (destino == 0 || origem == 0) return -EINVAL;
+    if (quantidade < TAMANHO_DO_CABECALHO_DE_GOVERNO) return -EMSGSIZE;
+    figura.magia = (uint32_t)origem[0] << 24 | (uint32_t)origem[1] << 16 |
+                   (uint32_t)origem[2] << 8 | origem[3];
+    figura.versao = (uint16_t)((uint16_t)origem[4] << 8 | origem[5]);
+    figura.operacao = (uint16_t)((uint16_t)origem[6] << 8 | origem[7]);
+    figura.quantidade_da_carga = (uint32_t)origem[8] << 24 |
+                                 (uint32_t)origem[9] << 16 |
+                                 (uint32_t)origem[10] << 8 | origem[11];
+    if (figura.magia != MAGIA_DO_PROTOCOLO_DE_GOVERNO ||
+        figura.versao != VERSAO_DO_PROTOCOLO_DE_GOVERNO) return -EPROTO;
+    if (!operacao_de_governo_e_conhecida(figura.operacao))
+        return -EOPNOTSUPP;
+    if (figura.quantidade_da_carga > LIMITE_DA_CARGA_DE_GOVERNO)
+        return -E2BIG;
+    *destino = figura;
+    return 0;
+}
+
+/*
  * THEOREMA DA LEITURA CERCADA
  * Proposito: converter uma mensagem exterior somente depois de contê-la.
  * Pre-condições: quantidade declara exactamente os octetos disponíveis.

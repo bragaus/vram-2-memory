@@ -33,4 +33,12 @@ struct cabecalho_de_governo {
     uint32_t quantidade_da_carga;
 };
 
+/*
+ * Proposito: julgar se um número nomeia operação publicada.
+ * Pre-condições: nenhuma; todo uint16_t pertence ao domínio de entrada.
+ * Effeitos: nenhum. Retorno: unidade quando conhecido, zero no restante.
+ * Razão: o servidor jámais executa intenção que seu vocabulário não contém.
+ */
+int operacao_de_governo_e_conhecida(uint16_t operacao);
+
 #endif

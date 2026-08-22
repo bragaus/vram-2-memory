@@ -1,5 +1,25 @@
 #include "../src/meio_simulado.h"
 
+/* Conserva quantas sentenças chegaram e qual foi a derradeira. */
+struct testemunho_da_conclusao {
+    int quantidade;
+    int erro;
+};
+
+/*
+ * Proposito: registrar cada conclusão entregue pelo meio assíncrono.
+ * Pre-condições: argumento aponta para testemunho vivo.
+ * Effeitos: soma uma sentença e conserva seu erro.
+ * Retorno: nenhum. Razão: contar torna visível omissão ou duplicação.
+ */
+void testemunhar_conclusao_do_meio(void *argumento, int erro)
+{
+    struct testemunho_da_conclusao *testemunho = argumento;
+
+    testemunho->quantidade++;
+    testemunho->erro = erro;
+}
+
 /*
  * PROVA DA INTEGRIDADE DO MEIO SIMULADO
  * Proposito: demonstrar reserva, transporte byte a byte e limites.

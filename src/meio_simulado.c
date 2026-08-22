@@ -279,3 +279,33 @@ int submeter_leitura_ao_meio_simulado(
     conclusao->pendente = 1;
     return 0;
 }
+
+/*
+ * THEOREMA DA ESCRIPTA PROMETTIDA
+ * Proposito: depositar agora e differir a sentença até a colheita.
+ * Pre-condições: fila ociosa, origem viva e região contida.
+ * Effeitos: altera o reservatório e arma exactamente uma conclusão.
+ * Retorno: zero quando acceita, ou erro negativo sem promessa ulterior.
+ * Razão: a mesma ordem temporal governa as duas direcções do transporte.
+ */
+int submeter_escripta_ao_meio_simulado(
+    void *contexto, int indice_da_fila, uint64_t deslocamento,
+    const void *origem, uint32_t quantidade_de_bytes,
+    funcao_de_conclusao_do_meio concluir, void *argumento)
+{
+    struct meio_assincrono_simulado *figura = contexto;
+    struct conclusao_simulada *conclusao = achar_conclusao_simulada(
+        figura, indice_da_fila);
+
+    if (conclusao == 0 || concluir == 0 || origem == 0 ||
+        !intervallo_do_meio_e_valido(
+            &figura->meio, deslocamento, quantidade_de_bytes)) return -EINVAL;
+    if (conclusao->pendente) return -EBUSY;
+    if (!escrever_meio_simulado(&figura->meio, deslocamento, origem,
+                                quantidade_de_bytes)) return -EIO;
+    conclusao->concluir = concluir;
+    conclusao->argumento = argumento;
+    conclusao->erro = 0;
+    conclusao->pendente = 1;
+    return 0;
+}

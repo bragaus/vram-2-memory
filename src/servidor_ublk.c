@@ -243,6 +243,13 @@ void *servir_fila_ublk(void *argumento)
     incumbencia->contexto.contexto_do_meio =
         incumbencia->servidor->contexto_do_meio;
     incumbencia->contexto.indice_da_fila = incumbencia->indice;
+    incumbencia->resultado = incumbencia->contexto.operacoes_do_meio
+        ->vincular_fila(incumbencia->contexto.contexto_do_meio,
+                       incumbencia->contexto.indice_da_fila);
+    if (incumbencia->resultado < 0) {
+        destruir_fila_de_requisicoes(&incumbencia->fila);
+        return argumento;
+    }
     if (incumbencia->servidor->empregar_cuda) {
         incumbencia->contexto.transportador_cuda =
             &incumbencia->transportador_cuda;
@@ -540,16 +547,16 @@ int preparar_servidor_ublk(struct estado_do_servidor_ublk *servidor,
         servidor_em_exercicio != 0) return -EINVAL;
     servidor->configuracao = configuracao;
     servidor->empregar_cuda = empregar_cuda != 0;
+    servidor->operacoes_do_meio = servidor->empregar_cuda ?
+        obter_operacoes_do_meio_cuda() : obter_operacoes_do_meio_simulado();
     /* O servidor de swap jámais poderá depender do proprio dispositivo. */
     if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0) return -errno;
     servidor->memoria_fixada = 1;
-    if ((servidor->empregar_cuda && !criar_meio_cuda(
-            &servidor->meio_cuda, configuracao->indice_da_gpu,
-            configuracao->capacidade_em_bytes)) ||
-        (!servidor->empregar_cuda && !criar_meio_simulado(
-            &servidor->meio, configuracao->capacidade_em_bytes))) {
+    resultado = servidor->operacoes_do_meio->preparar(
+        &servidor->contexto_do_meio, configuracao);
+    if (resultado < 0) {
         desmontar_servidor_ublk(servidor);
-        return -ENOMEM;
+        return resultado;
     }
     servidor_em_exercicio = servidor;
     resultado = abrir_controle_ublk(servidor);

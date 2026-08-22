@@ -6,6 +6,7 @@ DIRECTORIO_DA_CONSTRUCAO := construcao
 PROVAS := $(DIRECTORIO_DA_CONSTRUCAO)/provar_transicoes \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_configuracao \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_carga_de_creacao \
+	$(DIRECTORIO_DA_CONSTRUCAO)/provar_governo_do_apparelho \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_meio_simulado \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_fila_de_requisicoes \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_protocolo_de_governo \
@@ -44,6 +45,10 @@ $(DIRECTORIO_DA_CONSTRUCAO)/provar_configuracao: \
 $(DIRECTORIO_DA_CONSTRUCAO)/provar_carga_de_creacao: \
 		testes/provar_carga_de_creacao.c src/carga_de_creacao.c src/configuracao.c | $(DIRECTORIO_DA_CONSTRUCAO)
 	$(COMPILADOR) $(AVISOS) $^ -o $@
+
+$(DIRECTORIO_DA_CONSTRUCAO)/provar_governo_do_apparelho: \
+		testes/provar_governo_do_apparelho.c src/governo_do_apparelho.c src/configuracao.c | $(DIRECTORIO_DA_CONSTRUCAO)
+	$(COMPILADOR) $(AVISOS) -pthread $^ -o $@
 
 $(DIRECTORIO_DA_CONSTRUCAO)/provar_meio_simulado: \
 		testes/provar_meio_simulado.c src/meio_simulado.c | $(DIRECTORIO_DA_CONSTRUCAO)

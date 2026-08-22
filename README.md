@@ -106,6 +106,29 @@ Ella transporta dezasseis octetos pela RAM simulada e apresenta, em ordem, uma
 observação directa, uma inferência causada por limiar artificial e a ignorância
 de um retrato envelhecido. Nenhum passo acciona `ublk`, `fio` ou `swap`.
 
+### A prova descartável sem GPU
+
+O hospedeiro não privilegiado poderá provar o caminho ublk simulado dentro de
+uma VM QEMU sem disco nem rede:
+
+```text
+PKG_CONFIG_PATH=$HOME/.local/ublk-stack/lib/pkgconfig \
+DIRECTORIO_DO_CUDA=$HOME/.local/cuda-12.9 make provar_vm
+```
+
+Requerem-se QEMU, `cpio`, `gzip`, `zstd`, BusyBox estático, compilador, `make`,
+`git`, `ldd`, `pkg-config` e `sed`. KVM é empregado quando accessível. A receita
+obtém a versão fixada de `fio`; se `/boot/vmlinuz-$(uname -r)` estiver protegido,
+extráhe sem `sudo` o pacote exacto do núcleo instalado. Portanto, o primeiro uso
+poderá reclamar rede, ainda que a própria VM permaneça inteiramente desligada.
+
+Durante cinco minutos, três trabalhos confrontam regiões distinctas de um bloco
+simulado de 1 GiB com operações de 4 KiB, 64 KiB e 1 MiB e verificação CRC32C.
+A machina recusa qualquer ublk preexistente, confere o major e minor em `sysfs`,
+prova uma operação inválida e remove somente o apparelho que ella própria creou.
+Todo privilégio existe dentro da VM descartável; nenhum bloco do hospedeiro lhe
+é apresentado. `DURACAO_DO_FIO_EM_SEGUNDOS=5` serve somente a ensaios breves.
+
 **ADVERTÊNCIA DESTRUTIVA.** Somente depois de identificar exactamente o bloco
 ublk creado, a prova integral poderá ser expressamente destrancada:
 

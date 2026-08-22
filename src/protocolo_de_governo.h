@@ -41,4 +41,14 @@ struct cabecalho_de_governo {
  */
 int operacao_de_governo_e_conhecida(uint16_t operacao);
 
+/*
+ * Proposito: escrever o cabeçalho canônico em doze octetos exteriores.
+ * Pre-condições: destino declara sua capacidade verdadeira.
+ * Effeitos: grava somente após julgar operação, carga e espaço.
+ * Retorno: zero no êxito ou erro negativo sem escripta parcial.
+ * Razão: ordem explícita independe do alinhamento e da machina hospedeira.
+ */
+int escrever_cabecalho_de_governo(unsigned char *destino, size_t capacidade,
+                                  uint16_t operacao, uint32_t carga);
+
 #endif

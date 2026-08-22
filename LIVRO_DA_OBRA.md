@@ -26,6 +26,7 @@
 - `[!]` Provas do observatório escriptas; execução suspensa.
 - `[✓]` Decisões de nascimento, memória fixada e prazo assentadas.
 - `[✓]` Contracto assíncrono commum demonstrado em simulador e CUDA.
+- `[✓]` Protocolo local versionado demonstrado sem tomada exterior.
 
 ## § III. DA PROPOSIÇÃO IMMEDIATA
 
@@ -215,3 +216,33 @@ contra `ublksrv 1.8` e CUDA 12.9 com todos os avisos fataes.
 **Limite conhecido:** a fronteira é assíncrona, porém a execução CUDA ainda
 espera a corrente antes de armar sua sentença. Eventos por etiqueta pertencem
 ao chamado #30. Nenhum ublk, privilégio, `fio` ou `swap` participou. **Q.E.D.**
+
+## § XV. DA LINGUAGEM DO GOVERNO
+
+O chamado #25 fixou uma mensagem de doze octetos, escripta em ordem maior
+primeiro: marca `VRAM`, versão um, operação de dezasseis bits e extensão da
+carga. Cinco operações possuem números permanentes, e a carga não excede
+65536 octetos.
+
+A leitura mede o cabeçalho antes de tocar seus campos, recusa marca, versão e
+operação estranhas, e exige igualdade exacta entre extensão declarada e
+mensagem recebida. A escripta recusada conserva integralmente seu destino.
+
+Executaram-se:
+
+```text
+make construcao/provar_protocolo_de_governo
+./construcao/provar_protocolo_de_governo
+make provar
+cc -std=c11 -Wall -Wextra -Wpedantic -Werror \
+  -fsanitize=address,undefined -fno-omit-frame-pointer \
+  testes/provar_protocolo_de_governo.c src/protocolo_de_governo.c \
+  -o construcao/provar_protocolo_de_governo_saneado
+./construcao/provar_protocolo_de_governo_saneado
+```
+
+Todas as sentenças devolveram êxito, inclusive cada fragmento de zero a onze
+octetos sob saneadores de endereço e conducta indefinida.
+
+**Limite conhecido:** demonstrou-se codificação e julgamento em memória; a
+tomada Unix e os processos exteriores principiam no chamado #26. **Q.E.D.**

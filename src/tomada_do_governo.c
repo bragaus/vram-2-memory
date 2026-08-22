@@ -87,3 +87,16 @@ int ligar_tomada_do_governo(const char *caminho)
     (void)close(descritor);
     return -erro;
 }
+
+/*
+ * Proposito: restituir a tomada que o chamador sabe haver publicado.
+ * Pre-condições: caminho pertence ao recinto possuído. Effeitos: remove-o.
+ * Retorno: zero quando removido ou ausente, senão erro negativo do systema.
+ * Razão: ausência já satisfaz a pós-condição de uma restituição idempotente.
+ */
+int restituir_tomada_do_governo(const char *caminho)
+{
+    if (caminho == 0) return -EINVAL;
+    if (unlink(caminho) == 0 || errno == ENOENT) return 0;
+    return -errno;
+}

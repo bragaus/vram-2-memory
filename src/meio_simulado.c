@@ -369,3 +369,26 @@ int colher_meio_simulado(void *contexto, int indice_da_fila, int orcamento)
     concluir(argumento, erro);
     return 1;
 }
+
+/*
+ * COROLLARIO DA TABOA SIMULADA
+ * Proposito: reunir todas as operações sob o contracto commum.
+ * Pre-condições: as funcções conservam suas assinaturas normativas.
+ * Effeitos: nenhum. Retorno: endereço estático e immutável da taboa.
+ * Razão: o consulente conhece a lei, não a matéria que a demonstra.
+ */
+const struct operacoes_do_meio *obter_operacoes_do_meio_simulado(void)
+{
+    static const struct operacoes_do_meio operacoes = {
+        .preparar = preparar_meio_assincrono_simulado,
+        .vincular_fila = vincular_fila_do_meio_simulado,
+        .aquecer_fila = aquecer_fila_do_meio_simulado,
+        .destruir = destruir_meio_assincrono_simulado,
+        .ler = submeter_leitura_ao_meio_simulado,
+        .escrever = submeter_escripta_ao_meio_simulado,
+        .zerar = submeter_zeragem_ao_meio_simulado,
+        .colher = colher_meio_simulado
+    };
+
+    return &operacoes;
+}

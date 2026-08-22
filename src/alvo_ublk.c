@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "alvo_ublk.h"
+#include "meio_cuda.h"
 
 #include <errno.h>
 #include <limits.h>
@@ -136,35 +137,11 @@ int transferir_requisicao_ublk(struct contexto_da_fila_ublk *contexto,
                                uint8_t operacao, uint64_t deslocamento,
                                void *memoria, uint32_t quantidade_de_bytes)
 {
-    if (contexto == 0 || quantidade_de_bytes > INT_MAX) return -EINVAL;
-    if (contexto->operacoes_do_meio != 0 ||
-        contexto->contexto_do_meio != 0) {
-        if (contexto->operacoes_do_meio == 0 ||
-            contexto->contexto_do_meio == 0) return -EINVAL;
-        return transferir_pelo_contrato_do_meio(
-            contexto, operacao, deslocamento, memoria, quantidade_de_bytes);
-    }
-    if (contexto->transportador_cuda == 0) return -EINVAL;
-    switch (operacao) {
-    case UBLK_IO_OP_READ:
-        return ler_meio_cuda(contexto->transportador_cuda, deslocamento,
-                             memoria, quantidade_de_bytes) ?
-               (int)quantidade_de_bytes : -EIO;
-    case UBLK_IO_OP_WRITE:
-        return escrever_meio_cuda(contexto->transportador_cuda,
-                                  deslocamento, memoria,
-                                  quantidade_de_bytes) ?
-               (int)quantidade_de_bytes : -EIO;
-    case UBLK_IO_OP_FLUSH:
-        return 0;
-    case UBLK_IO_OP_DISCARD:
-    case UBLK_IO_OP_WRITE_ZEROES:
-        return zerar_meio_cuda(contexto->transportador_cuda, deslocamento,
-                               quantidade_de_bytes) ?
-               (int)quantidade_de_bytes : -EIO;
-    default:
-        return -EOPNOTSUPP;
-    }
+    if (contexto == 0 || quantidade_de_bytes > INT_MAX ||
+        contexto->operacoes_do_meio == 0 ||
+        contexto->contexto_do_meio == 0) return -EINVAL;
+    return transferir_pelo_contrato_do_meio(
+        contexto, operacao, deslocamento, memoria, quantidade_de_bytes);
 }
 
 /*

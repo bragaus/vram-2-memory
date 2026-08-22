@@ -1,5 +1,6 @@
 #ifndef MEIO_CUDA_H
 #define MEIO_CUDA_H
+#include "contrato_do_meio.h"
 #include <cuda_runtime_api.h>
 #include <stdint.h>
 /* O reservatório reside na GPU; sua capacidade limita todo deslocamento. */
@@ -91,5 +92,13 @@ int escrever_meio_cuda(struct transportador_cuda *transportador,
  */
 int zerar_meio_cuda(struct transportador_cuda *transportador,
                     uint64_t deslocamento, uint32_t quantidade_de_bytes);
+
+/*
+ * Proposito: revelar a taboa assíncrona do reservatório CUDA.
+ * Pre-condições: nenhuma; a taboa possue duração estática.
+ * Effeitos: nenhum. Retorno: operações immutáveis do meio CUDA.
+ * Razão: a lei commum encobre a execução material hoje synchrona.
+ */
+const struct operacoes_do_meio *obter_operacoes_do_meio_cuda(void);
 
 #endif

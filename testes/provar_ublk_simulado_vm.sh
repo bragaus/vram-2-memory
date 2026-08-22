@@ -107,7 +107,7 @@ qemu-system-x86_64 $aceleracao \
     -m "$MEMORIA_DA_VM_EM_MIB" -smp "$PROCESSADORES_DA_VM" \
     -display none -serial stdio -monitor none -nic none -no-reboot \
     -kernel "$kernel_da_vm" -initrd "$imagem_do_initramfs" \
-    -append "console=ttyS0 rdinit=/init panic=-1" \
+    -append "console=ttyS0 rdinit=/init panic=-1 quiet loglevel=3" \
     -device isa-debug-exit,iobase=0xf4,iosize=0x04
 resultado_do_qemu=$?
 set -e

@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* Uma fila CUDA conserva a sentença que aguarda colheita. */
 struct conclusao_cuda {
@@ -347,4 +348,31 @@ int vincular_fila_do_meio_cuda(void *contexto, int indice_da_fila)
     if (transportador == 0) return -EINVAL;
     if (transportador->corrente != 0) return 0;
     return criar_transportador_cuda(transportador, &figura->meio) ? 0 : -EIO;
+}
+
+/*
+ * THEOREMA DO PRIMEIRO DMA
+ * Proposito: percorrer as duas direcções e a zeragem antes do alvo.
+ * Pre-condições: fila válida e memória CPU previamente fixada.
+ * Effeitos: transporta zeros pela corrente e torna a apagá-los na VRAM.
+ * Retorno: zero no êxito, -EINVAL no domínio ou -EIO no transporte.
+ * Razão: cada caminho material deverá fallir antes de receber trabalho.
+ */
+int aquecer_fila_do_meio_cuda(void *contexto, int indice_da_fila,
+                              void *memoria, size_t quantidade_de_bytes)
+{
+    struct meio_assincrono_cuda *figura = contexto;
+    struct transportador_cuda *transportador;
+    uint32_t quantidade;
+
+    if (vincular_fila_do_meio_cuda(contexto, indice_da_fila) < 0 ||
+        memoria == 0 || quantidade_de_bytes == 0 ||
+        quantidade_de_bytes > UINT32_MAX) return -EINVAL;
+    transportador = achar_transportador_cuda(figura, indice_da_fila);
+    quantidade = (uint32_t)quantidade_de_bytes;
+    memset(memoria, 0, quantidade_de_bytes);
+    if (!escrever_meio_cuda(transportador, 0, memoria, quantidade) ||
+        !ler_meio_cuda(transportador, 0, memoria, quantidade) ||
+        !zerar_meio_cuda(transportador, 0, quantidade)) return -EIO;
+    return 0;
 }

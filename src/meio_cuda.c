@@ -314,3 +314,37 @@ void destruir_meio_assincrono_cuda(void *contexto)
     free(figura->transportadores);
     free(figura);
 }
+
+/*
+ * LEMMA DO TRANSPORTADOR NUMERADO
+ * Proposito: achar a corrente pertencente a uma fila válida.
+ * Pre-condições: nenhuma; contexto e índice poderão ser estranhos.
+ * Effeitos: nenhum. Retorno: transportador ou nulo fora do domínio.
+ * Razão: a fronteira da taboa antecede todo accesso por índice.
+ */
+static struct transportador_cuda *achar_transportador_cuda(
+    struct meio_assincrono_cuda *figura, int indice_da_fila)
+{
+    if (figura == 0 || indice_da_fila < 0 ||
+        indice_da_fila >= figura->quantidade_de_filas) return 0;
+    return &figura->transportadores[indice_da_fila];
+}
+
+/*
+ * THEOREMA DO VÍNCULO CUDA
+ * Proposito: fazer nascer a corrente no fio que governará sua fila.
+ * Pre-condições: contexto vivo e índice pertencente á configuração.
+ * Effeitos: adquire uma corrente singular quando ainda não existe.
+ * Retorno: zero no êxito, ou erro negativo sem posse parcial.
+ * Razão: o contexto CUDA deverá ser assentado pelo proprio fio da fila.
+ */
+int vincular_fila_do_meio_cuda(void *contexto, int indice_da_fila)
+{
+    struct meio_assincrono_cuda *figura = contexto;
+    struct transportador_cuda *transportador = achar_transportador_cuda(
+        figura, indice_da_fila);
+
+    if (transportador == 0) return -EINVAL;
+    if (transportador->corrente != 0) return 0;
+    return criar_transportador_cuda(transportador, &figura->meio) ? 0 : -EIO;
+}

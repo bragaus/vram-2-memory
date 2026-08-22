@@ -176,3 +176,21 @@ int preparar_meio_assincrono_simulado(
     *contexto = figura;
     return 0;
 }
+
+/*
+ * COROLLARIO DA RESTITUIÇÃO ASSÍNCRONA
+ * Proposito: desfazer em ordem inversa as posses do contexto simulado.
+ * Pre-condições: nenhuma conclusão permanece promettida ao consulente.
+ * Effeitos: liberta reservatório, escrivaninhas e invólucro.
+ * Retorno: nenhum; contexto nulo já representa o termo.
+ * Razão: a matéria interior morre antes da figura que a contém.
+ */
+void destruir_meio_assincrono_simulado(void *contexto)
+{
+    struct meio_assincrono_simulado *figura = contexto;
+
+    if (figura == 0) return;
+    destruir_meio_simulado(&figura->meio);
+    free(figura->conclusoes);
+    free(figura);
+}

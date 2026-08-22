@@ -72,4 +72,12 @@ const struct operacoes_do_meio *obter_operacoes_do_meio_simulado(void);
 int preparar_meio_assincrono_simulado(
     void **contexto, const struct configuracao_do_apparelho *configuracao);
 
+/*
+ * Proposito: restituir o contexto assíncrono integralmente.
+ * Pre-condições: nenhuma conclusão permanece pendente.
+ * Effeitos: liberta reservatório, escrivaninhas e invólucro.
+ * Retorno: nenhum. Razão: a posse exterior converge numa porta singular.
+ */
+void destruir_meio_assincrono_simulado(void *contexto);
+
 #endif

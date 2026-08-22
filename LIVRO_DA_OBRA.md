@@ -315,3 +315,35 @@ segundos confirmou também o código exterior zero da receita.
 **Limite conhecido:** os números medem RAM simulada dentro desta VM, não VRAM,
 PCIe ou capacidade da GPU. A experiência não formatou, montou nem activou
 `swap`, e nenhum bloco do hospedeiro foi entregue á convidada. **Q.E.D.**
+
+## § XVIII. DA PORTA DO CONDUCTOR CUDA
+
+O chamado #28 retirou a Runtime API. `cuInit` escolhe o `CUdevice`, o contexto
+primário é retido e assentado em cada fio, `cuMemAlloc` reserva a VRAM e uma
+`CUstream` não bloqueante pertence a cada fila. Os buffers fixados nascem de
+`cuMemHostAlloc`; leitura, escripta e zero empregam as cópias e a zeragem
+assíncronas da Driver API.
+
+Na RTX 3060 sob controlador 580.173.02 executaram-se:
+
+```text
+DIRECTORIO_DO_CUDA=/home/bragaus/.local/cuda-12.9 make -B provar_cuda
+compute-sanitizer --tool memcheck --leak-check full \
+  ./construcao/provar_meio_cuda
+PKG_CONFIG_PATH=/home/bragaus/.local/ublk-stack/lib/pkgconfig \
+DIRECTORIO_DO_CUDA=/home/bragaus/.local/cuda-12.9 make -B preparar_cuda
+readelf -d construcao/provar_meio_cuda
+```
+
+A prova reservou 8192 octetos, transportou um padrão de 4096 octetos em ambas
+as direcções, confrontou cada octeto, zerou e tornou a confrontar cada posição.
+Duas regiões além do domínio foram recusadas. O saneador declarou zero erros e
+zero octetos perdidos.
+
+A taboa dinâmica da prova nomeou somente `libcuda.so.1` e `libc.so.6`, sem
+`cudart`, RPATH ou RUNPATH do Toolkit. O servidor integral ligou com `libcuda`
+e a VM ublk simulada tornou a fechar verde sem copiar `libcudart`.
+
+**Limite conhecido:** as submissões da Driver API ainda synchronizam a corrente
+antes de armar a conclusão. Eventos por etiqueta e progresso verdadeiramente
+assíncrono pertencem ao chamado #30. **Q.E.D.**

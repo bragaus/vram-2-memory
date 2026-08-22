@@ -517,3 +517,26 @@ int colher_meio_cuda(void *contexto, int indice_da_fila, int orcamento)
     concluir(argumento, erro);
     return 1;
 }
+
+/*
+ * COROLLARIO DA TABOA CUDA
+ * Proposito: reunir todas as operações sob o contracto commum.
+ * Pre-condições: as funcções conservam suas assinaturas normativas.
+ * Effeitos: nenhum. Retorno: endereço estático e immutável da taboa.
+ * Razão: o alvo conhece a lei e ignora a execução material de CUDA.
+ */
+const struct operacoes_do_meio *obter_operacoes_do_meio_cuda(void)
+{
+    static const struct operacoes_do_meio operacoes = {
+        .preparar = preparar_meio_assincrono_cuda,
+        .vincular_fila = vincular_fila_do_meio_cuda,
+        .aquecer_fila = aquecer_fila_do_meio_cuda,
+        .destruir = destruir_meio_assincrono_cuda,
+        .ler = submeter_leitura_ao_meio_cuda,
+        .escrever = submeter_escripta_ao_meio_cuda,
+        .zerar = submeter_zeragem_ao_meio_cuda,
+        .colher = colher_meio_cuda
+    };
+
+    return &operacoes;
+}

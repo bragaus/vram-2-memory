@@ -21,6 +21,14 @@ restituir_raiz_temporaria()
 }
 trap restituir_raiz_temporaria EXIT HUP INT TERM
 
+mkdir -p "$artefactos" "$raiz_do_initramfs"
+if [ ! -r "$kernel_da_vm" ]; then
+    kernel_legivel="$artefactos/vmlinuz-$(uname -r)"
+    "$directorio_da_vm/preparar_kernel_legivel.sh" \
+        "$kernel_da_vm" "$kernel_legivel"
+    kernel_da_vm=$kernel_legivel
+fi
+
 for instrumento in qemu-system-x86_64 cpio gzip zstd cc make git ldd pkg-config; do
     if ! command -v "$instrumento" >/dev/null 2>&1; then
         echo "Instrumento ausente: $instrumento" >&2
@@ -34,8 +42,6 @@ for caminho in "$kernel_da_vm" "$modulo_ublk" /bin/busybox; do
         exit 3
     fi
 done
-
-mkdir -p "$artefactos" "$raiz_do_initramfs"
 
 PKG_CONFIG_PATH="$pkg_config_do_ublk" make -C "$raiz_da_obra" \
     preparar_cuda DIRECTORIO_DO_CUDA="$directorio_do_cuda"

@@ -49,15 +49,6 @@ int entregar_requisicao_ublk(struct contexto_da_fila_ublk *contexto,
                              uint64_t instante_final);
 
 /*
- * Proposito: restituir a memória fixada quando a fila exterior termina.
- * Pre-condições: endereço entregue pela reserva CUDA.
- * Effeitos: chama cudaFreeHost. Retorno: nenhum.
- * Razão: a bibliotheca impõe esta assinatura exterior sem resultado.
- */
-void destruir_memoria_ublk_cuda(const struct ublksrv_queue *fila_exterior,
-                                void *memoria, int etiqueta);
-
-/*
  * Proposito: traduzir uma requisição ublk em leitura ou escripta do meio.
  * Pre-condições: fila, contexto, etiqueta e memória intermediária válidos.
  * Effeitos: possue a etiqueta, transporta octetos e conclue-a uma vez.

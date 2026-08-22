@@ -1,7 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "alvo_ublk.h"
-#include "meio_cuda.h"
 
 #include <errno.h>
 #include <limits.h>
@@ -48,19 +47,6 @@ uint64_t ler_instante_monotonico(void)
            (uint64_t)instante.tv_nsec;
 }
 
-/*
- * COROLLARIO DA RESTITUICAO EXTERIOR
- * Proposito: adaptar cudaFreeHost á assinatura sem retorno da bibliotheca.
- * Pre-condições: memória fixada ou nula. Effeitos: restitue a região.
- * Retorno: nenhum. Razão: fila e etiqueta não participam da posse material.
- */
-void destruir_memoria_ublk_cuda(const struct ublksrv_queue *fila_exterior,
-                                void *memoria, int etiqueta)
-{
-    (void)fila_exterior;
-    (void)etiqueta;
-    destruir_memoria_intermediaria_cuda(memoria);
-}
 /*
  * THEOREMA DA PASSAGEM PELO CONTRACTO
  * Proposito: submetter, colher e traduzir uma operação do meio commum.

@@ -156,6 +156,21 @@ void *reservar_memoria_intermediaria_cuda(uint32_t quantidade_de_bytes)
 }
 
 /*
+ * LEMMA DA RESERVA EXTERIOR FIXA
+ * Proposito: adaptar a acquisição CUDA á assinatura de libublksrv.
+ * Pre-condições: tamanho positivo. Effeitos: reserva memória CPU fixada.
+ * Retorno: endereço ou nulo. Razão: fila e etiqueta não mudam a grandeza.
+ */
+void *reservar_memoria_exterior_cuda(
+    const struct ublksrv_queue *fila_exterior, int etiqueta, int tamanho)
+{
+    (void)fila_exterior;
+    (void)etiqueta;
+    if (tamanho <= 0) return 0;
+    return reservar_memoria_intermediaria_cuda((uint32_t)tamanho);
+}
+
+/*
  * COROLLARIO DA RESTITUICAO INTERMEDIARIA
  * Proposito: devolver á execução CUDA uma região CPU fixada.
  * Pre-condições: endereço nasceu de cudaHostAlloc ou é nulo.

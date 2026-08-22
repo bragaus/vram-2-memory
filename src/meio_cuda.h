@@ -3,6 +3,8 @@
 #include "contrato_do_meio.h"
 #include <cuda_runtime_api.h>
 #include <stdint.h>
+
+struct ublksrv_queue;
 /* O reservatório reside na GPU; sua capacidade limita todo deslocamento. */
 struct meio_cuda {
     unsigned char *memoria_da_gpu;
@@ -55,6 +57,15 @@ int destruir_transportador_cuda(struct transportador_cuda *transportador);
  * Razão: memória paginável não demonstra travessia assíncrona por DMA.
  */
 void *reservar_memoria_intermediaria_cuda(uint32_t quantidade_de_bytes);
+
+/*
+ * Proposito: adaptar a reserva CUDA á assinatura exterior de libublksrv.
+ * Pre-condições: tamanho positivo; fila e etiqueta poderão ser ignoradas.
+ * Effeitos: adquire memória CPU fixada. Retorno: endereço ou nulo.
+ * Razão: a adaptação pertence ao meio, não ao alvo que o empregará.
+ */
+void *reservar_memoria_exterior_cuda(
+    const struct ublksrv_queue *fila_exterior, int etiqueta, int tamanho);
 
 /*
  * Proposito: devolver a memória CPU fixada depois da última transferência.

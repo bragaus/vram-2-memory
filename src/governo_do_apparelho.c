@@ -126,3 +126,19 @@ int destruir_apparelho_governado(struct governo_do_apparelho *governo)
     (void)pthread_mutex_unlock(&governo->exclusao);
     return resultado;
 }
+
+/*
+ * Proposito: restituir a exclusão depois da ausência comprovada do fio.
+ * Pre-condições: governo preparado. Effeitos: destrói seu mutex.
+ * Retorno: zero, -EBUSY ou erro negativo de pthread.
+ * Razão: a última posse interna jámais pode morrer sob um trabalhador vivo.
+ */
+int encerrar_governo_do_apparelho(struct governo_do_apparelho *governo)
+{
+    int resultado;
+
+    if (governo == 0) return -EINVAL;
+    if (governo->fio_nascido) return -EBUSY;
+    resultado = pthread_mutex_destroy(&governo->exclusao);
+    return resultado == 0 ? 0 : -resultado;
+}

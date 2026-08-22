@@ -1,4 +1,5 @@
 #include "governo_do_apparelho.h"
+#include "instancia_do_servidor.h"
 #include "morada_do_governo.h"
 #include "numero_decimal.h"
 #include "registro_do_governo.h"
@@ -9,6 +10,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 struct opcoes_do_servidor {
@@ -71,4 +73,47 @@ int terminar_cuda_governado(void *contexto)
 {
     (void)contexto;
     return ordenar_termo_do_servidor_ublk();
+}
+
+/*
+ * PROPOSICAO DA ENTRADA SERVIDORA
+ * Proposito: abrir a instância e conceder audiências em primeiro plano.
+ * Pre-condições: linha de comando canônica e dependências quando houver create.
+ * Effeitos: possue morada e governo até a restituição final.
+ * Retorno: EXIT_SUCCESS no termo regular ou EXIT_FAILURE na primeira falha.
+ * Razão: um processo visível é o único proprietário de cada instância.
+ */
+int main(int quantidade_de_argumentos, char *argumentos[])
+{
+    struct opcoes_do_servidor opcoes;
+    struct instancia_do_servidor instancia;
+    int resultado;
+    int resultado_do_termo;
+
+    resultado = ler_opcoes_do_servidor(
+        &opcoes, quantidade_de_argumentos, argumentos);
+    if (resultado < 0) {
+        fprintf(stderr, "Uso: %s [--root RAIZ] [--once] ID\n",
+                argumentos[0]);
+        return EXIT_FAILURE;
+    }
+    resultado = abrir_instancia_do_servidor(
+        &instancia, opcoes.raiz, opcoes.indice,
+        servir_cuda_governado, terminar_cuda_governado, 0);
+    if (resultado < 0) {
+        fprintf(stderr, "A instância servidora foi recusada: %d.\n", resultado);
+        return EXIT_FAILURE;
+    }
+    printf("vramdiskd: tomada=%s pid=%s\n",
+           instancia.morada.tomada, instancia.morada.processo);
+    (void)fflush(stdout);
+    do {
+        resultado = atender_cliente_do_governo(
+            instancia.tomada_servidora, &instancia.governo);
+        if (resultado < 0)
+            fprintf(stderr, "A audiência fallou: %d.\n", resultado);
+    } while (resultado == 0 && !opcoes.uma_audiencia);
+    resultado_do_termo = fechar_instancia_do_servidor(&instancia);
+    if (resultado == 0) resultado = resultado_do_termo;
+    return resultado == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

@@ -8,6 +8,26 @@
 #include <stdint.h>
 #include <time.h>
 
+/* Conserva a sentença colhida durante a passagem ainda synchrona do alvo. */
+struct resultado_da_transferencia {
+    int foi_concluida;
+    int erro;
+};
+
+/*
+ * Proposito: receber a sentença commum e torná-la resultado immediato.
+ * Pre-condições: argumento aponta para testemunho vivo na pilha chamadora.
+ * Effeitos: grava erro e marca conclusão. Retorno: nenhum.
+ * Razão: a transição conserva a API antiga até o alvo tornar-se assíncrono.
+ */
+void concluir_transferencia_do_meio(void *argumento, int erro)
+{
+    struct resultado_da_transferencia *resultado = argumento;
+
+    resultado->erro = erro;
+    resultado->foi_concluida = 1;
+}
+
 /*
  * LEMMA DO INSTANTE MONOTONICO
  * Proposito: medir a marcha da requisição sem sujeição ao calendário civil.

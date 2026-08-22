@@ -1,6 +1,7 @@
 #ifndef ALVO_UBLK_H
 #define ALVO_UBLK_H
 
+#include "contrato_do_meio.h"
 #include "fila_de_requisicoes.h"
 #include "meio_cuda.h"
 #include "meio_simulado.h"
@@ -11,6 +12,9 @@
 /* A fila exterior encontra aqui o meio e o livro de suas etiquetas. */
 struct contexto_da_fila_ublk {
     struct fila_de_requisicoes *fila;
+    const struct operacoes_do_meio *operacoes_do_meio;
+    void *contexto_do_meio;
+    int indice_da_fila;
     struct meio_simulado *meio_simulado;
     struct transportador_cuda *transportador_cuda;
     struct contadores_da_fila *contadores;

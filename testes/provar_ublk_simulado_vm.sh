@@ -82,3 +82,28 @@ imagem_do_initramfs="$artefactos/initramfs-vramdisk.cpio.gz"
  find . -print0 | sort -z | cpio --null -o --format=newc 2>/dev/null |
  gzip -9 > "$imagem_do_initramfs")
 test -s "$imagem_do_initramfs"
+
+if [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
+    aceleracao="-enable-kvm -cpu host"
+else
+    aceleracao="-cpu max"
+fi
+
+set +e
+# A expansão de aceleracao contém somente os dois argumentos fixos acima.
+qemu-system-x86_64 $aceleracao \
+    -m "$MEMORIA_DA_VM_EM_MIB" -smp "$PROCESSADORES_DA_VM" \
+    -display none -serial stdio -monitor none -nic none -no-reboot \
+    -kernel "$kernel_da_vm" -initrd "$imagem_do_initramfs" \
+    -append "console=ttyS0 rdinit=/init panic=-1" \
+    -device isa-debug-exit,iobase=0xf4,iosize=0x04
+resultado_do_qemu=$?
+set -e
+
+resultado_esperado=$((CODIGO_DE_EXITO_DA_VM * 2 + 1))
+if [ "$resultado_do_qemu" -ne "$resultado_esperado" ]; then
+    echo "VM fallou: QEMU=$resultado_do_qemu, esperado=$resultado_esperado" >&2
+    exit 4
+fi
+
+echo "VM descartável concluiu fio verificado e restituição integral."

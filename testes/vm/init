@@ -34,4 +34,46 @@ ulimit -l unlimited
 insmod /lib/modules/ublk_drv.ko
 
 echo "VM: núcleo e ublk_drv preparados."
+
+set -- /sys/class/block/ublkb*
+if [ -e "$1" ]; then
+    echo "VM: a machina não principiou sem ublk." >&2
+    exit 20
+fi
+
+LD_LIBRARY_PATH=/lib /bin/vramdiskd --backend simulado --audiencias 2 0 &
+processo_do_servidor=$!
+
+tentativa=0
+while [ ! -S /run/vramdisk/0/control.sock ] && [ "$tentativa" -lt 60 ]; do
+    sleep 1
+    tentativa=$((tentativa + 1))
+done
+test -S /run/vramdisk/0/control.sock
+
+LD_LIBRARY_PATH=/lib /bin/vramdiskctl create 0 \
+    "$CAPACIDADE_DO_APPARELHO" "$QUANTIDADE_DE_FILAS" \
+    "$PROFUNDIDADE_DAS_FILAS" "$MAIOR_OPERACAO" \
+    "$PRAZO_DA_OPERACAO" 0
+
+tentativa=0
+set -- /sys/class/block/ublkb*
+while [ ! -e "$1" ] && [ "$tentativa" -lt 60 ]; do
+    sleep 1
+    tentativa=$((tentativa + 1))
+    set -- /sys/class/block/ublkb*
+done
+test "$#" -eq 1
+test -e "$1"
+
+nome_do_bloco=${1##*/}
+dispositivo="/dev/$nome_do_bloco"
+test -b "$dispositivo"
+major_e_minor=$(cat "$1/dev")
+test -n "$major_e_minor"
+test "$(readlink -f "/sys/dev/block/$major_e_minor")" = "$(readlink -f "$1")"
+sectores=$(cat "$1/size")
+test "$sectores" -eq "$((CAPACIDADE_DO_APPARELHO / 512))"
+
+echo "VM: bloco $nome_do_bloco, par $major_e_minor, capacidade provada."
 codigo_final="$CODIGO_DE_EXITO_DA_VM"

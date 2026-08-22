@@ -94,3 +94,35 @@ int contemplar_apparelho_governado(
     (void)pthread_mutex_unlock(&governo->exclusao);
     return 0;
 }
+
+/*
+ * THEOREMA DO TERMO REUNIDO
+ * Proposito: ordenar termo e recolher o único fio que nasceu.
+ * Pre-condições: governo preparado. Effeitos: transita, ordena e reúne.
+ * Retorno: zero, erro da ordem, de pthread ou do serviço concluído.
+ * Razão: destroy victorioso significa ausência demonstrada do proprietário.
+ */
+int destruir_apparelho_governado(struct governo_do_apparelho *governo)
+{
+    pthread_t fio;
+    int resultado;
+
+    if (governo == 0) return -EINVAL;
+    (void)pthread_mutex_lock(&governo->exclusao);
+    if (!governo->fio_nascido) {
+        (void)pthread_mutex_unlock(&governo->exclusao);
+        return -ENODEV;
+    }
+    governo->estado = ESTADO_DO_GOVERNO_PARANDO;
+    fio = governo->fio;
+    (void)pthread_mutex_unlock(&governo->exclusao);
+    resultado = governo->ordenar_termo(governo->contexto);
+    if (resultado < 0) return resultado;
+    resultado = pthread_join(fio, 0);
+    if (resultado != 0) return -resultado;
+    (void)pthread_mutex_lock(&governo->exclusao);
+    governo->fio_nascido = 0;
+    resultado = governo->resultado;
+    (void)pthread_mutex_unlock(&governo->exclusao);
+    return resultado;
+}

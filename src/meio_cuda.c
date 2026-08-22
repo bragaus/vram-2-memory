@@ -487,3 +487,33 @@ int submeter_zeragem_ao_meio_cuda(
     conclusao->pendente = 1;
     return 0;
 }
+
+/*
+ * THEOREMA DA COLHEITA CUDA SINGULAR
+ * Proposito: entregar a promessa pendente da fila exactamente uma vez.
+ * Pre-condições: orçamento positivo e fila pertencente ao contexto.
+ * Effeitos: desarma a sentença antes de chamar o consulente.
+ * Retorno: uma conclusão, zero na ausência ou erro negativo no domínio.
+ * Razão: a ordem permitte que a própria conclusão arme trabalho novo.
+ */
+int colher_meio_cuda(void *contexto, int indice_da_fila, int orcamento)
+{
+    struct meio_assincrono_cuda *figura = contexto;
+    struct conclusao_cuda *conclusao = achar_conclusao_cuda(
+        figura, indice_da_fila);
+    funcao_de_conclusao_do_meio concluir;
+    void *argumento;
+    int erro;
+
+    if (conclusao == 0 || orcamento <= 0) return -EINVAL;
+    if (!conclusao->pendente) return 0;
+    concluir = conclusao->concluir;
+    argumento = conclusao->argumento;
+    erro = conclusao->erro;
+    conclusao->concluir = 0;
+    conclusao->argumento = 0;
+    conclusao->erro = 0;
+    conclusao->pendente = 0;
+    concluir(argumento, erro);
+    return 1;
+}

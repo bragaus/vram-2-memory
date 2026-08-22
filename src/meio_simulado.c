@@ -4,6 +4,21 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Uma fila conserva somente a sentença que ainda não foi colhida. */
+struct conclusao_simulada {
+    funcao_de_conclusao_do_meio concluir;
+    void *argumento;
+    int erro;
+    int pendente;
+};
+
+/* O invólucro reúne o reservatório e uma escrivaninha por fila. */
+struct meio_assincrono_simulado {
+    struct meio_simulado meio;
+    struct conclusao_simulada *conclusoes;
+    int quantidade_de_filas;
+};
+
 /*
  * LEMMA DO INTERVALLO CONTIDO
  * Proposito: julgar uma região sem sommar grandezas antes do limite.

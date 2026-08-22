@@ -1,8 +1,11 @@
+#define _POSIX_C_SOURCE 200809L
 #include "morada_do_governo.h"
 
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 /*
  * THEOREMA DA MORADA SINGULAR
@@ -35,5 +38,32 @@ int formar_morada_do_governo(struct morada_do_governo *destino,
     if (quantidade < 0 || (size_t)quantidade >= sizeof(figura.processo))
         return -ENAMETOOLONG;
     *destino = figura;
+    return 0;
+}
+
+/*
+ * PROPOSICAO DO RECINTO EXCLUSIVO
+ * Proposito: crear a raiz commum e reservar o directório de uma instância.
+ * Pre-condições: caminhos anteriormente formados e raiz absoluta.
+ * Effeitos: publica directórios 0750; nunca remove nem adopta um homônimo.
+ * Retorno: zero no êxito ou erro negativo do systema.
+ * Razão: mkdir exclusivo faz do directório o primeiro selo de propriedade.
+ */
+int preparar_morada_do_governo(const struct morada_do_governo *morada,
+                               const char *raiz)
+{
+    struct stat estado;
+
+    if (morada == 0 || raiz == 0 || raiz[0] != '/') return -EINVAL;
+    if (mkdir(raiz, 0750) != 0 && errno != EEXIST) return -errno;
+    if (lstat(raiz, &estado) != 0) return -errno;
+    if (!S_ISDIR(estado.st_mode) || S_ISLNK(estado.st_mode)) return -ENOTDIR;
+    if (mkdir(morada->directorio, 0750) != 0) return -errno;
+    if (chmod(morada->directorio, 0750) != 0) {
+        int erro = errno;
+
+        (void)rmdir(morada->directorio);
+        return -erro;
+    }
     return 0;
 }

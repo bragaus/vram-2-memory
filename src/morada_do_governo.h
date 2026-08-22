@@ -21,4 +21,14 @@ struct morada_do_governo {
 int formar_morada_do_governo(struct morada_do_governo *destino,
                              const char *raiz, unsigned int indice);
 
+/*
+ * Proposito: crear a raiz compartilhada e o directório exclusivo da instância.
+ * Pre-condições: morada formada e raiz absoluta sem barra derradeira.
+ * Effeitos: crea directórios com modos 0750, sem adoptar instância existente.
+ * Retorno: zero no êxito ou erro negativo do systema.
+ * Razão: exclusividade do directório antecede tomada e registro de processo.
+ */
+int preparar_morada_do_governo(const struct morada_do_governo *morada,
+                               const char *raiz);
+
 #endif

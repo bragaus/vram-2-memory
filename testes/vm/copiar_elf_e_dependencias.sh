@@ -27,7 +27,7 @@ copiar_elf()
     copiar_caminho_absoluto "$elf"
     for dependencia in $(ldd "$elf" | awk '
         /=> \// { print $3 }
-        /^\// { print $1 }
+        /^[[:space:]]*\// { print $1 }
     '); do
         copiar_caminho_absoluto "$dependencia"
     done

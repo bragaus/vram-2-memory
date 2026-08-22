@@ -17,7 +17,10 @@ struct opcoes_do_servidor {
     const char *raiz;
     unsigned int indice;
     int uma_audiencia;
+    int meio_simulado;
 };
+
+struct escolha_do_meio_servidor { int simulado; };
 
 /*
  * Proposito: julgar raiz, modo de prova e índice da entrada servidora.
@@ -29,7 +32,9 @@ struct opcoes_do_servidor {
 int ler_opcoes_do_servidor(struct opcoes_do_servidor *destino,
                            int quantidade, char *argumentos[])
 {
-    struct opcoes_do_servidor figura = {RAIZ_ORDINARIA_DO_GOVERNO, 0, 0};
+    struct opcoes_do_servidor figura = {
+        RAIZ_ORDINARIA_DO_GOVERNO, 0, 0, 0
+    };
     uint64_t indice;
     int cursor = 1;
 
@@ -42,6 +47,13 @@ int ler_opcoes_do_servidor(struct opcoes_do_servidor *destino,
         } else if (strcmp(argumentos[cursor], "--once") == 0) {
             figura.uma_audiencia = 1;
             cursor++;
+        } else if (strcmp(argumentos[cursor], "--backend") == 0 &&
+                   cursor + 1 < quantidade - 1) {
+            if (strcmp(argumentos[cursor + 1], "simulado") == 0)
+                figura.meio_simulado = 1;
+            else if (strcmp(argumentos[cursor + 1], "cuda") != 0)
+                return -EINVAL;
+            cursor += 2;
         } else return -EINVAL;
     }
     if (cursor != quantidade - 1 ||
@@ -53,14 +65,17 @@ int ler_opcoes_do_servidor(struct opcoes_do_servidor *destino,
 }
 
 /*
- * Proposito: exercer no fio proprietário o serviço CUDA integral.
- * Pre-condições: configuração válida. Effeitos: possue CUDA e ublk até termo.
- * Retorno: resultado exacto do servidor. Razão: só vramdiskd conhece esta ponte.
+ * Proposito: exercer no fio proprietário o meio CUDA ou simulado escolhido.
+ * Pre-condições: configuração e escolha válidas. Effeitos: possue ublk e meio.
+ * Retorno: resultado exacto do servidor. Razão: só vramdiskd conhece a ponte.
  */
-int servir_cuda_governado(
+int servir_meio_governado(
     const struct configuracao_do_apparelho *configuracao, void *contexto)
 {
-    (void)contexto;
+    const struct escolha_do_meio_servidor *escolha = contexto;
+
+    if (escolha != 0 && escolha->simulado)
+        return executar_servidor_ublk(configuracao);
     return executar_servidor_cuda(configuracao);
 }
 
@@ -86,6 +101,7 @@ int terminar_cuda_governado(void *contexto)
 int main(int quantidade_de_argumentos, char *argumentos[])
 {
     struct opcoes_do_servidor opcoes;
+    struct escolha_do_meio_servidor escolha;
     struct instancia_do_servidor instancia;
     int resultado;
     int resultado_do_termo;
@@ -93,13 +109,14 @@ int main(int quantidade_de_argumentos, char *argumentos[])
     resultado = ler_opcoes_do_servidor(
         &opcoes, quantidade_de_argumentos, argumentos);
     if (resultado < 0) {
-        fprintf(stderr, "Uso: %s [--root RAIZ] [--once] ID\n",
+        fprintf(stderr, "Uso: %s [--root RAIZ] [--backend cuda|simulado] [--once] ID\n",
                 argumentos[0]);
         return EXIT_FAILURE;
     }
+    escolha.simulado = opcoes.meio_simulado;
     resultado = abrir_instancia_do_servidor(
         &instancia, opcoes.raiz, opcoes.indice,
-        servir_cuda_governado, terminar_cuda_governado, 0);
+        servir_meio_governado, terminar_cuda_governado, &escolha);
     if (resultado < 0) {
         fprintf(stderr, "A instância servidora foi recusada: %d.\n", resultado);
         return EXIT_FAILURE;

@@ -37,7 +37,6 @@ struct incumbencia_da_fila_ublk {
     struct estado_do_servidor_ublk *servidor;
     struct fila_de_requisicoes fila;
     struct contexto_da_fila_ublk contexto;
-    struct transportador_cuda transportador_cuda;
     pthread_t fio_de_execucao;
     unsigned short indice;
     int resultado;
@@ -334,17 +333,9 @@ int iniciar_filas_ublk(struct estado_do_servidor_ublk *servidor,
             &incumbencias[*quantidade_iniciada];
         incumbencia->servidor = servidor;
         incumbencia->indice = (unsigned short)*quantidade_iniciada;
-        if (servidor->empregar_cuda &&
-            !criar_transportador_cuda(&incumbencia->transportador_cuda,
-                                      &servidor->meio_cuda)) {
-            return -EIO;
-        }
         resultado = pthread_create(&incumbencia->fio_de_execucao, 0,
                                    servir_fila_ublk, incumbencia);
-        if (resultado != 0) {
-            destruir_transportador_cuda(&incumbencia->transportador_cuda);
-            return -resultado;
-        }
+        if (resultado != 0) return -resultado;
         (*quantidade_iniciada)++;
     }
     return 0;

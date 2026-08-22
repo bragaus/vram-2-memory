@@ -80,4 +80,12 @@ int preparar_meio_assincrono_simulado(
  */
 void destruir_meio_assincrono_simulado(void *contexto);
 
+/*
+ * Proposito: reconhecer a fila que colherá suas próprias sentenças.
+ * Pre-condições: contexto vivo e índice pertencente á configuração.
+ * Effeitos: nenhum no simulador. Retorno: zero ou -EINVAL.
+ * Razão: conservar a mesma fronteira exigida pelos contextos CUDA.
+ */
+int vincular_fila_do_meio_simulado(void *contexto, int indice_da_fila);
+
 #endif

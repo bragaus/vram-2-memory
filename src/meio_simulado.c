@@ -194,3 +194,19 @@ void destruir_meio_assincrono_simulado(void *contexto)
     free(figura->conclusoes);
     free(figura);
 }
+
+/*
+ * LEMMA DA FILA SIMULADA
+ * Proposito: julgar se uma fila pertence ao contexto preparado.
+ * Pre-condições: nenhuma; contexto e índice poderão ser estranhos.
+ * Effeitos: nenhum. Retorno: zero no domínio ou -EINVAL na recusa.
+ * Razão: a identidade da fila antecede toda conclusão que ella colherá.
+ */
+int vincular_fila_do_meio_simulado(void *contexto, int indice_da_fila)
+{
+    const struct meio_assincrono_simulado *figura = contexto;
+
+    if (figura == 0 || indice_da_fila < 0 ||
+        indice_da_fila >= figura->quantidade_de_filas) return -EINVAL;
+    return 0;
+}

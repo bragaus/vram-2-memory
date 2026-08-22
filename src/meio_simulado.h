@@ -88,4 +88,13 @@ void destruir_meio_assincrono_simulado(void *contexto);
  */
 int vincular_fila_do_meio_simulado(void *contexto, int indice_da_fila);
 
+/*
+ * Proposito: tocar previamente o caminho inteiro da fila simulada.
+ * Pre-condições: fila válida e memória alojável pelo contracto.
+ * Effeitos: zera, escreve e relê a primeira região do meio.
+ * Retorno: zero no êxito ou erro negativo. Razão: excluir falta tardia.
+ */
+int aquecer_fila_do_meio_simulado(void *contexto, int indice_da_fila,
+                                  void *memoria, size_t quantidade_de_bytes);
+
 #endif

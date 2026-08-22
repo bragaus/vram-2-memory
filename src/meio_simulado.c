@@ -210,3 +210,27 @@ int vincular_fila_do_meio_simulado(void *contexto, int indice_da_fila)
         indice_da_fila >= figura->quantidade_de_filas) return -EINVAL;
     return 0;
 }
+
+/*
+ * THEOREMA DO PRIMEIRO PERCURSO
+ * Proposito: tocar buffer e reservatório antes que a fila seja publicada.
+ * Pre-condições: fila válida e região positiva representável em uint32_t.
+ * Effeitos: deposita e recolhe zeros na origem do meio.
+ * Retorno: zero no êxito, -EINVAL no domínio ou -EIO no transporte.
+ * Razão: o primeiro accesso não deverá sorprender o caminho já exposto.
+ */
+int aquecer_fila_do_meio_simulado(void *contexto, int indice_da_fila,
+                                  void *memoria, size_t quantidade_de_bytes)
+{
+    struct meio_assincrono_simulado *figura = contexto;
+    uint32_t quantidade;
+
+    if (vincular_fila_do_meio_simulado(contexto, indice_da_fila) < 0 ||
+        memoria == 0 || quantidade_de_bytes == 0 ||
+        quantidade_de_bytes > UINT32_MAX) return -EINVAL;
+    quantidade = (uint32_t)quantidade_de_bytes;
+    memset(memoria, 0, quantidade_de_bytes);
+    if (!escrever_meio_simulado(&figura->meio, 0, memoria, quantidade) ||
+        !ler_meio_simulado(&figura->meio, 0, memoria, quantidade)) return -EIO;
+    return 0;
+}

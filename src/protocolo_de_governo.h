@@ -51,4 +51,14 @@ int operacao_de_governo_e_conhecida(uint16_t operacao);
 int escrever_cabecalho_de_governo(unsigned char *destino, size_t capacidade,
                                   uint16_t operacao, uint32_t carga);
 
+/*
+ * Proposito: julgar uma mensagem inteira e publicar seu cabeçalho nativo.
+ * Pre-condições: quantidade declara exactamente os octetos disponíveis.
+ * Effeitos: altera o destino somente depois de todas as provas.
+ * Retorno: zero no êxito ou erro negativo sem leitura exterior ao domínio.
+ * Razão: truncamento e excesso são ambos contradicções do comprimento.
+ */
+int ler_mensagem_de_governo(struct cabecalho_de_governo *destino,
+                            const unsigned char *mensagem, size_t quantidade);
+
 #endif

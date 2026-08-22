@@ -17,7 +17,7 @@ PROVAS := $(DIRECTORIO_DA_CONSTRUCAO)/provar_transicoes \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_tomada_do_governo \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_observatorio
 FONTES_DO_SERVIDOR := src/principal.c src/servidor_ublk.c src/alvo_ublk.c \
-	src/configuracao.c src/estado_da_requisicao.c src/meio_simulado.c \
+	src/configuracao.c src/numero_decimal.c src/estado_da_requisicao.c src/meio_simulado.c \
 	src/meio_cuda.c src/fila_de_requisicoes.c src/retrato_do_observatorio.c \
 	src/monitor_do_observatorio.c src/observador_de_si.c
 SERVIDOR := $(DIRECTORIO_DA_CONSTRUCAO)/vram-2-memory

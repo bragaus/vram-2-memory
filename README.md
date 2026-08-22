@@ -51,8 +51,8 @@ termo regular. Consulte-se `LIVRO_DA_OBRA.md` antes de confiar-lhe um octeto.
 
 ## § V. DO OBSERVATORIO — comandos reservados á futura experiência
 
-Requerem-se `libublksrv`, cabeçalhos CUDA, `cudart`, uma GPU e permissão para
-fixar memória. A construção real, quando novamente consentida, será:
+Requerem-se `libublksrv`, `cuda.h`, `libcuda.so`, uma GPU e permissão para
+fixar memória. `nvcc` e `cudart` não participam. A construção real será:
 
 ```text
 PKG_CONFIG_PATH=$HOME/.local/ublk-stack/lib/pkgconfig \

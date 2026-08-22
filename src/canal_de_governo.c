@@ -1,6 +1,7 @@
 #include "canal_de_governo.h"
 
 #include <errno.h>
+#include <stdlib.h>
 #include <sys/socket.h>
 
 /*
@@ -47,4 +48,53 @@ int enviar_mensagem_de_governo(int descritor, uint16_t operacao,
         descritor, cabecalho, sizeof(cabecalho));
     if (resultado < 0 || quantidade == 0) return resultado;
     return escrever_todos_os_octetos(descritor, carga, quantidade);
+}
+
+/*
+ * Proposito: receber cabeçalho e carga exactos de uma tomada ligada.
+ * Pre-condições: destino sem carga possuída e descritor bloqueante.
+ * Effeitos: adquire carga somente após validar o cabeçalho. Retorno: zero ou erro.
+ * Razão: cada laço conhece a fronteira antes de pedir o próximo octeto.
+ */
+int receber_mensagem_de_governo(int descritor,
+                                struct mensagem_de_governo *destino)
+{
+    unsigned char octetos[TAMANHO_DO_CABECALHO_DE_GOVERNO];
+    struct cabecalho_de_governo cabecalho;
+    unsigned char *carga = 0;
+    size_t recebidos = 0;
+    int resultado;
+    if (descritor < 0 || destino == 0 || destino->carga != 0) return -EINVAL;
+    while (recebidos < sizeof(octetos)) {
+        ssize_t parcela = recv(descritor, octetos + recebidos,
+                               sizeof(octetos) - recebidos, 0);
+        if (parcela < 0) {
+            if (errno == EINTR) continue;
+            return -errno;
+        }
+        if (parcela == 0) return -ECONNRESET;
+        recebidos += (size_t)parcela;
+    }
+    resultado = ler_cabecalho_de_governo(&cabecalho, octetos, sizeof(octetos));
+    if (resultado < 0) return resultado;
+    if (cabecalho.quantidade_da_carga != 0) {
+        carga = malloc((size_t)cabecalho.quantidade_da_carga);
+        if (carga == 0) return -ENOMEM;
+        recebidos = 0;
+        while (recebidos < cabecalho.quantidade_da_carga) {
+            ssize_t parcela = recv(
+                descritor, carga + recebidos,
+                (size_t)cabecalho.quantidade_da_carga - recebidos, 0);
+            if (parcela < 0 && errno == EINTR) continue;
+            if (parcela <= 0) {
+                resultado = parcela == 0 ? -ECONNRESET : -errno;
+                free(carga);
+                return resultado;
+            }
+            recebidos += (size_t)parcela;
+        }
+    }
+    destino->cabecalho = cabecalho;
+    destino->carga = carga;
+    return 0;
 }

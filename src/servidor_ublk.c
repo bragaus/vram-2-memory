@@ -521,6 +521,7 @@ int desmontar_servidor_ublk(struct estado_do_servidor_ublk *servidor)
         if (munlockall() != 0 && resultado == 0) resultado = -errno;
         servidor->memoria_fixada = 0;
     }
+    atomic_store_explicit(&termo_requerido, 0, memory_order_relaxed);
     return resultado;
 }
 
@@ -538,14 +539,25 @@ int preparar_servidor_ublk(struct estado_do_servidor_ublk *servidor,
 {
     int resultado;
 
-    if (servidor == 0 || !configuracao_do_apparelho_e_valida(configuracao) ||
-        servidor_em_exercicio != 0) return -EINVAL;
+    if (servidor == 0 || !configuracao_do_apparelho_e_valida(configuracao))
+        return -EINVAL;
+    (void)pthread_mutex_lock(&exclusao_do_governo);
+    if (servidor_em_exercicio != 0) {
+        (void)pthread_mutex_unlock(&exclusao_do_governo);
+        return -EBUSY;
+    }
+    servidor_em_exercicio = servidor;
+    (void)pthread_mutex_unlock(&exclusao_do_governo);
     servidor->configuracao = configuracao;
     servidor->empregar_cuda = empregar_cuda != 0;
     servidor->operacoes_do_meio = servidor->empregar_cuda ?
         obter_operacoes_do_meio_cuda() : obter_operacoes_do_meio_simulado();
     /* O servidor de swap jámais poderá depender do proprio dispositivo. */
-    if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0) return -errno;
+    if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0) {
+        resultado = -errno;
+        desmontar_servidor_ublk(servidor);
+        return resultado;
+    }
     servidor->memoria_fixada = 1;
     resultado = servidor->operacoes_do_meio->preparar(
         &servidor->contexto_do_meio, configuracao);
@@ -553,11 +565,14 @@ int preparar_servidor_ublk(struct estado_do_servidor_ublk *servidor,
         desmontar_servidor_ublk(servidor);
         return resultado;
     }
-    servidor_em_exercicio = servidor;
     resultado = abrir_controle_ublk(servidor);
     if (resultado < 0) {
         desmontar_servidor_ublk(servidor);
         return resultado;
+    }
+    if (atomic_load_explicit(&termo_requerido, memory_order_relaxed)) {
+        desmontar_servidor_ublk(servidor);
+        return -ECANCELED;
     }
     servidor->dispositivo = ublksrv_dev_init(servidor->controle);
     if (servidor->dispositivo == 0) {

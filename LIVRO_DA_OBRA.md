@@ -246,3 +246,39 @@ octetos sob saneadores de endereço e conducta indefinida.
 
 **Limite conhecido:** demonstrou-se codificação e julgamento em memória; a
 tomada Unix e os processos exteriores principiam no chamado #26. **Q.E.D.**
+
+## § XVI. DAS DUAS PESSOAS DO GOVERNO
+
+O chamado #26 separou o proprietário `vramdiskd` do cliente `vramdiskctl`.
+Cada instância reserva `/run/vramdisk/<id>` em modo `0750`, escreve `pid` em
+`0640` e publica `control.sock` em `0660`, sem remover ou adoptar homônimo.
+O cliente deriva a mesma morada, conserva uma ligação por ordem e liga somente
+`libc`; CUDA, ublk, recinto e fio proprietário pertencem ao servidor.
+
+`create` leva em vinte e oito octetos canônicos a configuração julgada,
+`status` contempla estado e resultado sob uma única exclusão, e `destroy`
+ordena termo e só responde depois de reunir o fio. A entrada directa antiga
+foi retirada; sua migração é iniciar `vramdiskd ID` e então enviar os mesmos
+números por `vramdiskctl create ID ...`.
+
+Executaram-se:
+
+```text
+make provar preparar_cliente
+PKG_CONFIG_PATH=/home/bragaus/.local/ublk-stack/lib/pkgconfig \
+  make preparar_cuda DIRECTORIO_DO_CUDA=/home/bragaus/.local/cuda-12.9
+ldd construcao/vramdiskctl
+nm -u construcao/vramdiskctl
+vramdiskd --root /tmp/<recinto>/raiz --once 0
+vramdiskctl --root /tmp/<recinto>/raiz status 0
+```
+
+As provas portáteis devolveram êxito. A audiência exterior respondeu
+`{"ok":true,"estado":"VAZIO","erro":0,"resultado":0}` e restituiu tomada,
+pid e directório; a raiz de prova também foi removida. A taboa dinâmica do
+cliente declarou somente `libc` e nenhum symbolo indefinido CUDA ou ublk.
+
+**Limite conhecido:** a audiência `status` não publicou bloco; `create` e
+`destroy` possuem provas portáteis com serviço fingido, enquanto a travessia
+real ublk em ambiente descartável pertence ao chamado #27. Nenhum privilégio,
+`fio`, formatação, montagem ou `swap` participou. **Q.E.D.**

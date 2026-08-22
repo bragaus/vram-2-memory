@@ -1,6 +1,7 @@
 #include "../src/protocolo_de_governo.h"
 
 #include <errno.h>
+#include <stdlib.h>
 #include <string.h>
 
 /*
@@ -55,4 +56,45 @@ int provar_identidade_do_protocolo(void)
     mensagem[7] = 0xffU;
     return ler_mensagem_de_governo(&cabecalho, mensagem, sizeof(mensagem)) ==
            -EOPNOTSUPP;
+}
+
+/*
+ * Proposito: cercar truncamento, excesso e carga maior que o contracto.
+ * Pre-condições: o alocador fornece exactamente a extensão pedida.
+ * Effeitos: adquire e restitue exemplares truncados durante a prova.
+ * Retorno: unidade quando toda extensão falsa é recusada, zero no restante.
+ * Razão: memória exacta permitte ao saneador denunciar leitura indiscreta.
+ */
+int provar_extensao_da_mensagem(void)
+{
+    unsigned char mensagem[TAMANHO_DO_CABECALHO_DE_GOVERNO + 2U];
+    struct cabecalho_de_governo cabecalho = {0};
+    size_t tamanho;
+
+    for (tamanho = 0; tamanho < TAMANHO_DO_CABECALHO_DE_GOVERNO; ++tamanho) {
+        size_t reserva = tamanho == 0 ? 1 : tamanho;
+        unsigned char *fragmento = malloc(reserva);
+        int resultado;
+
+        if (fragmento == 0) return 0;
+        memset(fragmento, 0, reserva);
+        resultado = ler_mensagem_de_governo(&cabecalho, fragmento, tamanho);
+        free(fragmento);
+        if (resultado != -EMSGSIZE) return 0;
+    }
+    if (escrever_cabecalho_de_governo(
+            mensagem, sizeof(mensagem), OPERACAO_DE_GOVERNO_CONTEMPLAR, 1) < 0)
+        return 0;
+    if (ler_mensagem_de_governo(
+            &cabecalho, mensagem, TAMANHO_DO_CABECALHO_DE_GOVERNO) !=
+            -EMSGSIZE ||
+        ler_mensagem_de_governo(&cabecalho, mensagem, sizeof(mensagem)) !=
+            -EMSGSIZE) return 0;
+    mensagem[8] = 0;
+    mensagem[9] = 1;
+    mensagem[10] = 0;
+    mensagem[11] = 1;
+    return ler_mensagem_de_governo(
+               &cabecalho, mensagem, TAMANHO_DO_CABECALHO_DE_GOVERNO) ==
+           -E2BIG;
 }

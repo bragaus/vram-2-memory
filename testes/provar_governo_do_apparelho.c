@@ -1,6 +1,7 @@
 #include "../src/governo_do_apparelho.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <stdatomic.h>
 
 struct contexto_da_prova_do_governo {
@@ -34,5 +35,38 @@ int terminar_prova_do_governo(void *contexto)
     struct contexto_da_prova_do_governo *prova = contexto;
 
     atomic_store(&prova->terminar, 1);
+    return 0;
+}
+
+/*
+ * Proposito: provar create, status, exclusividade, destroy e restituição.
+ * Pre-condições: pthread disponível. Effeitos: nasce e reúne um fio fingido.
+ * Retorno: zero no êxito. Razão: as ordens são provadas sem meio exterior.
+ */
+int main(void)
+{
+    const struct configuracao_do_apparelho configuracao = {
+        0, UINT64_C(65536), 1, 2, UINT32_C(4096), UINT32_C(1000)
+    };
+    struct contexto_da_prova_do_governo contexto = {0};
+    struct governo_do_apparelho governo;
+    enum estado_do_governo_do_apparelho estado;
+    int resultado;
+
+    assert(preparar_governo_do_apparelho(
+        &governo, servir_prova_do_governo,
+        terminar_prova_do_governo, &contexto) == 0);
+    assert(contemplar_apparelho_governado(&governo, &estado, &resultado) == 0);
+    assert(estado == ESTADO_DO_GOVERNO_VAZIO && resultado == 0);
+    assert(crear_apparelho_governado(&governo, &configuracao) == 0);
+    while (!atomic_load(&contexto.iniciou)) { }
+    assert(contemplar_apparelho_governado(&governo, &estado, &resultado) == 0);
+    assert(estado == ESTADO_DO_GOVERNO_EM_EXERCICIO);
+    assert(crear_apparelho_governado(&governo, &configuracao) == -EBUSY);
+    assert(encerrar_governo_do_apparelho(&governo) == -EBUSY);
+    assert(destruir_apparelho_governado(&governo) == 0);
+    assert(contemplar_apparelho_governado(&governo, &estado, &resultado) == 0);
+    assert(estado == ESTADO_DO_GOVERNO_VAZIO && resultado == 0);
+    assert(encerrar_governo_do_apparelho(&governo) == 0);
     return 0;
 }

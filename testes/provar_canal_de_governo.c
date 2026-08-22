@@ -71,3 +71,15 @@ termo:
     if (tomadas[1] >= 0) close(tomadas[1]);
     return resultado;
 }
+
+/*
+ * Proposito: reunir as demonstrações portáteis do canal de governo.
+ * Pre-condições: nenhuma tomada nomeada ou privilégio é necessário.
+ * Effeitos: abre somente pares locaes efêmeros. Retorno: zero ou unidade.
+ * Razão: uma receita singular denuncia a primeira lei contradita.
+ */
+int main(void)
+{
+    return provar_transporte_do_canal_de_governo() &&
+           provar_carga_truncada_no_canal() ? 0 : 1;
+}

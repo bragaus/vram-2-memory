@@ -1,5 +1,6 @@
 #include "../src/canal_de_governo.h"
 
+#include <errno.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -33,6 +34,39 @@ termo:
     destruir_mensagem_de_governo(&mensagem);
     destruir_mensagem_de_governo(&mensagem);
     if (mensagem.carga != 0 || mensagem.cabecalho.magia != 0) resultado = 0;
+    if (tomadas[0] >= 0) close(tomadas[0]);
+    if (tomadas[1] >= 0) close(tomadas[1]);
+    return resultado;
+}
+
+/*
+ * Proposito: provar que termo precoce não publica carga mutilada.
+ * Pre-condições: o par local permitte encerrar somente a escripta.
+ * Effeitos: envia cabeçalho, dois de quatro octetos e fecha a corrente.
+ * Retorno: unidade na recusa sem estado parcial, zero no restante.
+ * Razão: uma carga incompleta não poderá adquirir posse no destino.
+ */
+int provar_carga_truncada_no_canal(void)
+{
+    unsigned char envio[TAMANHO_DO_CABECALHO_DE_GOVERNO + 2U];
+    struct mensagem_de_governo mensagem = {0};
+    int tomadas[2] = {-1, -1};
+    int resultado = 0;
+
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, tomadas) != 0) goto termo;
+    if (escrever_cabecalho_de_governo(
+            envio, sizeof(envio), OPERACAO_DE_GOVERNO_CREAR, 4) < 0)
+        goto termo;
+    envio[TAMANHO_DO_CABECALHO_DE_GOVERNO] = 17;
+    envio[TAMANHO_DO_CABECALHO_DE_GOVERNO + 1U] = 19;
+    if (send(tomadas[0], envio, sizeof(envio), 0) != (ssize_t)sizeof(envio) ||
+        shutdown(tomadas[0], SHUT_WR) != 0) goto termo;
+    if (receber_mensagem_de_governo(tomadas[1], &mensagem) != -ECONNRESET ||
+        mensagem.carga != 0 || mensagem.cabecalho.magia != 0) goto termo;
+    resultado = 1;
+
+termo:
+    destruir_mensagem_de_governo(&mensagem);
     if (tomadas[0] >= 0) close(tomadas[0]);
     if (tomadas[1] >= 0) close(tomadas[1]);
     return resultado;

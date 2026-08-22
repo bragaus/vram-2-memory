@@ -9,6 +9,7 @@ PROVAS := $(DIRECTORIO_DA_CONSTRUCAO)/provar_transicoes \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_fila_de_requisicoes \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_protocolo_de_governo \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_canal_de_governo \
+	$(DIRECTORIO_DA_CONSTRUCAO)/provar_morada_do_governo \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_observatorio
 FONTES_DO_SERVIDOR := src/principal.c src/servidor_ublk.c src/alvo_ublk.c \
 	src/configuracao.c src/estado_da_requisicao.c src/meio_simulado.c \
@@ -51,6 +52,10 @@ $(DIRECTORIO_DA_CONSTRUCAO)/provar_protocolo_de_governo: \
 
 $(DIRECTORIO_DA_CONSTRUCAO)/provar_canal_de_governo: testes/provar_canal_de_governo.c \
 		src/canal_de_governo.c src/protocolo_de_governo.c | $(DIRECTORIO_DA_CONSTRUCAO)
+	$(COMPILADOR) $(AVISOS) $^ -o $@
+
+$(DIRECTORIO_DA_CONSTRUCAO)/provar_morada_do_governo: \
+		testes/provar_morada_do_governo.c src/morada_do_governo.c | $(DIRECTORIO_DA_CONSTRUCAO)
 	$(COMPILADOR) $(AVISOS) $^ -o $@
 
 $(DIRECTORIO_DA_CONSTRUCAO)/provar_observatorio: testes/provar_observatorio.c \

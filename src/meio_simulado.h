@@ -63,4 +63,13 @@ int zerar_meio_simulado(struct meio_simulado *meio, uint64_t deslocamento,
  */
 const struct operacoes_do_meio *obter_operacoes_do_meio_simulado(void);
 
+/*
+ * Proposito: adquirir o contexto assíncrono do meio simulado.
+ * Pre-condições: destino vazio e configuração integralmente válida.
+ * Effeitos: reserva o meio e uma conclusão por fila. Retorno: zero ou -errno.
+ * Razão: toda posse nasce antes que a taboa seja entregue ao alvo.
+ */
+int preparar_meio_assincrono_simulado(
+    void **contexto, const struct configuracao_do_apparelho *configuracao);
+
 #endif

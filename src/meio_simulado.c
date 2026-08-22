@@ -1,5 +1,6 @@
 #include "meio_simulado.h"
 
+#include <errno.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -138,4 +139,40 @@ int zerar_meio_simulado(struct meio_simulado *meio, uint64_t deslocamento,
     memset(meio->memoria + (size_t)deslocamento, 0,
            (size_t)quantidade_de_bytes);
     return 1;
+}
+
+/*
+ * THEOREMA DA PREPARAÇÃO ASSÍNCRONA
+ * Proposito: adquirir reservatório e escrivaninhas antes da publicação.
+ * Pre-condições: destino vazio e configuração pertencente ao domínio.
+ * Effeitos: publica contexto completo; restitue toda posse na falha.
+ * Retorno: zero no êxito, ou erro negativo sem estado parcial.
+ * Razão: nenhuma conclusão poderá nascer sem morada previamente numerada.
+ */
+int preparar_meio_assincrono_simulado(
+    void **contexto, const struct configuracao_do_apparelho *configuracao)
+{
+    struct meio_assincrono_simulado *figura;
+
+    if (contexto == 0 || *contexto != 0 || configuracao == 0 ||
+        configuracao->capacidade_em_bytes == 0 ||
+        configuracao->quantidade_de_filas <= 0) return -EINVAL;
+    figura = calloc(1, sizeof(*figura));
+    if (figura == 0) return -ENOMEM;
+    if (!criar_meio_simulado(&figura->meio,
+                             configuracao->capacidade_em_bytes)) {
+        free(figura);
+        return -ENOMEM;
+    }
+    figura->conclusoes = calloc(
+        (size_t)configuracao->quantidade_de_filas,
+        sizeof(*figura->conclusoes));
+    if (figura->conclusoes == 0) {
+        destruir_meio_simulado(&figura->meio);
+        free(figura);
+        return -ENOMEM;
+    }
+    figura->quantidade_de_filas = configuracao->quantidade_de_filas;
+    *contexto = figura;
+    return 0;
 }

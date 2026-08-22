@@ -19,6 +19,8 @@
 /* O servidor reune a configuração, o meio e as duas faces do dispositivo. */
 struct estado_do_servidor_ublk {
     const struct configuracao_do_apparelho *configuracao;
+    const struct operacoes_do_meio *operacoes_do_meio;
+    void *contexto_do_meio;
     struct meio_simulado meio;
     struct meio_cuda meio_cuda;
     struct ublksrv_ctrl_dev *controle;

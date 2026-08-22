@@ -8,6 +8,9 @@ fi
 
 origem=$1
 destino=$2
+if [ -r "$destino" ]; then
+    exit 0
+fi
 if [ -r "$origem" ]; then
     mkdir -p "$(dirname "$destino")"
     install -m 0644 "$origem" "$destino"

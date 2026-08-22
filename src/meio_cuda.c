@@ -376,3 +376,50 @@ int aquecer_fila_do_meio_cuda(void *contexto, int indice_da_fila,
         !zerar_meio_cuda(transportador, 0, quantidade)) return -EIO;
     return 0;
 }
+
+/*
+ * LEMMA DA SENTENÇA CUDA NUMERADA
+ * Proposito: achar a conclusão pertencente a uma fila válida.
+ * Pre-condições: nenhuma; contexto e índice poderão ser estranhos.
+ * Effeitos: nenhum. Retorno: sentença ou nulo fora do domínio.
+ * Razão: uma só demonstração cerca a taboa paralella ás correntes.
+ */
+static struct conclusao_cuda *achar_conclusao_cuda(
+    struct meio_assincrono_cuda *figura, int indice_da_fila)
+{
+    if (figura == 0 || indice_da_fila < 0 ||
+        indice_da_fila >= figura->quantidade_de_filas) return 0;
+    return &figura->conclusoes[indice_da_fila];
+}
+
+/*
+ * THEOREMA DA LEITURA CUDA PROMETTIDA
+ * Proposito: transportar por DMA e differir a sentença até a colheita.
+ * Pre-condições: fila ociosa, destino fixado e região contida.
+ * Effeitos: preenche o destino e arma exactamente uma conclusão.
+ * Retorno: zero quando acceita, ou erro negativo sem promessa ulterior.
+ * Razão: a taboa já separa tempos ainda que a execução espere a corrente.
+ */
+int submeter_leitura_ao_meio_cuda(
+    void *contexto, int indice_da_fila, uint64_t deslocamento, void *destino,
+    uint32_t quantidade_de_bytes, funcao_de_conclusao_do_meio concluir,
+    void *argumento)
+{
+    struct meio_assincrono_cuda *figura = contexto;
+    struct transportador_cuda *transportador = achar_transportador_cuda(
+        figura, indice_da_fila);
+    struct conclusao_cuda *conclusao = achar_conclusao_cuda(
+        figura, indice_da_fila);
+
+    if (conclusao == 0 || concluir == 0 || destino == 0 ||
+        !regiao_cuda_e_valida(transportador, deslocamento,
+                              quantidade_de_bytes)) return -EINVAL;
+    if (conclusao->pendente) return -EBUSY;
+    if (!ler_meio_cuda(transportador, deslocamento, destino,
+                       quantidade_de_bytes)) return -EIO;
+    conclusao->concluir = concluir;
+    conclusao->argumento = argumento;
+    conclusao->erro = 0;
+    conclusao->pendente = 1;
+    return 0;
+}

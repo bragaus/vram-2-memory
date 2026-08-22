@@ -62,3 +62,28 @@ int abrir_tomada_servidora_do_governo(const char *caminho)
     (void)unlink(caminho);
     return -erro;
 }
+
+/*
+ * Proposito: ligar um cliente á tomada conhecida sem possuir seu caminho.
+ * Pre-condições: caminho absoluto e servidor em escuta. Effeitos: abre ligação.
+ * Retorno: descritor no êxito ou erro negativo com recurso restituído.
+ * Razão: connect basta ao cliente; nenhum arquivo ou meio lhe pertence.
+ */
+int ligar_tomada_do_governo(const char *caminho)
+{
+    struct sockaddr_un endereco;
+    int descritor;
+    int resultado;
+    int erro;
+
+    resultado = formar_endereco_da_tomada(&endereco, caminho);
+    if (resultado < 0) return resultado;
+    descritor = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+    if (descritor < 0) return -errno;
+    if (connect(descritor, (const struct sockaddr *)&endereco,
+                sizeof(endereco)) == 0)
+        return descritor;
+    erro = errno;
+    (void)close(descritor);
+    return -erro;
+}

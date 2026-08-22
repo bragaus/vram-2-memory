@@ -238,6 +238,11 @@ void *servir_fila_ublk(void *argumento)
     incumbencia->contexto.fila = &incumbencia->fila;
     incumbencia->contexto.contadores =
         &incumbencia->servidor->contadores[incumbencia->indice];
+    incumbencia->contexto.operacoes_do_meio =
+        incumbencia->servidor->operacoes_do_meio;
+    incumbencia->contexto.contexto_do_meio =
+        incumbencia->servidor->contexto_do_meio;
+    incumbencia->contexto.indice_da_fila = incumbencia->indice;
     if (incumbencia->servidor->empregar_cuda) {
         incumbencia->contexto.transportador_cuda =
             &incumbencia->transportador_cuda;

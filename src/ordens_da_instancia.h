@@ -7,6 +7,15 @@
 #include <stddef.h>
 
 /*
+ * Proposito: nomear estavelmente um estado para respostas exteriores.
+ * Pre-condições: nenhuma. Effeitos: nenhum.
+ * Retorno: texto estático canônico, inclusive para número desconhecido.
+ * Razão: status e diagnóstico devem empregar o mesmo vocabulário.
+ */
+const char *nome_do_estado_do_governo(
+    enum estado_do_governo_do_apparelho estado);
+
+/*
  * Proposito: cumprir uma mensagem julgada e formar sua resposta JSON breve.
  * Pre-condições: governo, mensagem, destino e extensão vivos.
  * Effeitos: executa create, status ou destroy e grava resposta finita.

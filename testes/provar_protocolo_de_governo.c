@@ -98,3 +98,30 @@ int provar_extensao_da_mensagem(void)
                &cabecalho, mensagem, TAMANHO_DO_CABECALHO_DE_GOVERNO) ==
            -E2BIG;
 }
+
+/*
+ * Proposito: provar que a escripta recusada conserva o destino intacto.
+ * Pre-condições: exemplar e testemunho possuem doze octetos iguaes.
+ * Effeitos: tenta operação, carga e capacidade exteriores ao domínio.
+ * Retorno: unidade se nenhuma tentativa grava parcialmente, zero no restante.
+ * Razão: um cabeçalho mutilado não poderá sobreviver como mensagem futura.
+ */
+int provar_escripta_inteira_do_cabecalho(void)
+{
+    unsigned char destino[TAMANHO_DO_CABECALHO_DE_GOVERNO];
+    unsigned char testemunho[TAMANHO_DO_CABECALHO_DE_GOVERNO];
+
+    memset(destino, 0xa5, sizeof(destino));
+    memcpy(testemunho, destino, sizeof(destino));
+    if (escrever_cabecalho_de_governo(
+            destino, sizeof(destino), UINT16_MAX, 0) >= 0 ||
+        memcmp(destino, testemunho, sizeof(destino)) != 0) return 0;
+    if (escrever_cabecalho_de_governo(
+            destino, sizeof(destino), OPERACAO_DE_GOVERNO_CREAR,
+            LIMITE_DA_CARGA_DE_GOVERNO + 1U) >= 0 ||
+        memcmp(destino, testemunho, sizeof(destino)) != 0) return 0;
+    if (escrever_cabecalho_de_governo(
+            destino, sizeof(destino) - 1U, OPERACAO_DE_GOVERNO_CREAR, 0) >= 0 ||
+        memcmp(destino, testemunho, sizeof(destino)) != 0) return 0;
+    return 1;
+}

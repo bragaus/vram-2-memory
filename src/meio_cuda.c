@@ -292,3 +292,25 @@ int preparar_meio_assincrono_cuda(
     *contexto = figura;
     return 0;
 }
+
+/*
+ * COROLLARIO DA RESTITUIÇÃO CUDA COMMUM
+ * Proposito: desfazer em ordem inversa as posses do contexto CUDA.
+ * Pre-condições: nenhuma sentença ou transporte permanece pendente.
+ * Effeitos: restitue correntes, VRAM, taboas e invólucro.
+ * Retorno: nenhum; o termo futuro publicará diagnóstico pormenorizado.
+ * Razão: cada corrente morre antes do reservatório que ella referencia.
+ */
+void destruir_meio_assincrono_cuda(void *contexto)
+{
+    struct meio_assincrono_cuda *figura = contexto;
+    int indice;
+
+    if (figura == 0) return;
+    for (indice = 0; indice < figura->quantidade_de_filas; ++indice)
+        destruir_transportador_cuda(&figura->transportadores[indice]);
+    destruir_meio_cuda(&figura->meio);
+    free(figura->conclusoes);
+    free(figura->transportadores);
+    free(figura);
+}

@@ -1,0 +1,37 @@
+#!/bin/busybox sh
+set -eu
+
+. /configuracao.env
+
+codigo_final=1
+processo_do_servidor=""
+
+# Proposito: restituir a instância e entregar a sentença ao hospedeiro.
+restituir_machina()
+{
+    set +e
+    if [ -S /run/vramdisk/0/control.sock ]; then
+        LD_LIBRARY_PATH=/lib /bin/vramdiskctl destroy 0
+    fi
+    if [ -n "$processo_do_servidor" ]; then
+        wait "$processo_do_servidor"
+    fi
+    sync
+    /bin/encerrar_vm "$codigo_final"
+    poweroff -f
+}
+
+trap restituir_machina EXIT HUP INT TERM
+
+/bin/busybox --install -s /bin
+mkdir -p /proc /sys /dev /run /tmp
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+echo /bin/mdev > /proc/sys/kernel/hotplug
+mdev -s
+ulimit -l unlimited
+insmod /lib/modules/ublk_drv.ko
+
+echo "VM: núcleo e ublk_drv preparados."
+codigo_final="$CODIGO_DE_EXITO_DA_VM"

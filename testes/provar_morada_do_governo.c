@@ -1,8 +1,13 @@
+#define _POSIX_C_SOURCE 200809L
 #include "../src/morada_do_governo.h"
 
 #include <assert.h>
 #include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 /*
  * Proposito: provar que uma raiz e um índice geram os três nomes canônicos.
@@ -33,6 +38,32 @@ static void provar_raizes_recusadas(void)
 }
 
 /*
+ * Proposito: provar exclusividade e modo do recinto em raiz temporária.
+ * Pre-condições: /tmp permite crear directório. Effeitos: crea e remove prova.
+ * Retorno: nenhum. Razão: a prova não deve tocar a morada real do serviço.
+ */
+static void provar_recinto_exclusivo(void)
+{
+    char molde[] = "/tmp/provar-morada-XXXXXX";
+    char raiz[LIMITE_DO_CAMINHO_DO_GOVERNO];
+    struct morada_do_governo morada;
+    struct stat estado;
+    int quantidade;
+
+    assert(mkdtemp(molde) != 0);
+    quantidade = snprintf(raiz, sizeof(raiz), "%s/raiz", molde);
+    assert(quantidade > 0 && (size_t)quantidade < sizeof(raiz));
+    assert(formar_morada_do_governo(&morada, raiz, 3) == 0);
+    assert(preparar_morada_do_governo(&morada, raiz) == 0);
+    assert(stat(morada.directorio, &estado) == 0);
+    assert((estado.st_mode & 0777) == 0750);
+    assert(preparar_morada_do_governo(&morada, raiz) == -EEXIST);
+    assert(rmdir(morada.directorio) == 0);
+    assert(rmdir(raiz) == 0);
+    assert(rmdir(molde) == 0);
+}
+
+/*
  * Proposito: reunir as provas puras da morada.
  * Pre-condições: nenhuma. Effeitos: termina ao primeiro desvio.
  * Retorno: sempre zero no êxito.
@@ -42,5 +73,6 @@ int main(void)
 {
     provar_formacao_canonica();
     provar_raizes_recusadas();
+    provar_recinto_exclusivo();
     return 0;
 }

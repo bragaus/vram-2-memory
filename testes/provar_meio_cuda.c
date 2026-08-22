@@ -89,6 +89,11 @@ int main(void)
     for (unsigned int indice = 0; indice < 4096; indice++) {
         if (origem[indice] != destino[indice]) goto termo;
     }
+    if (!zerar_meio_cuda(&transportador, 2048, 4096) ||
+        !ler_meio_cuda(&transportador, 2048, destino, 4096)) goto termo;
+    for (unsigned int indice = 0; indice < 4096; indice++) {
+        if (destino[indice] != 0) goto termo;
+    }
     if (ler_meio_cuda(&transportador, 4097, destino, 4096) ||
         escrever_meio_cuda(&transportador, 8192, origem, 1)) goto termo;
     resultado = 0;

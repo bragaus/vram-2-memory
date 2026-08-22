@@ -1,4 +1,6 @@
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #include "servico_de_governo.h"
 #include "canal_de_governo.h"
 #include "ordens_da_instancia.h"

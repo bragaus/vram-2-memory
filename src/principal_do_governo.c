@@ -5,6 +5,7 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -64,4 +65,42 @@ int executar_ordem_do_cliente(const char *raiz,
         resultado = -ECANCELED;
     destruir_mensagem_de_governo(&resposta);
     return resultado;
+}
+
+/*
+ * PROPOSICAO DA ENTRADA CLIENTE
+ * Proposito: julgar raiz e argumentos antes de uma única travessia local.
+ * Pre-condições: convenção ordinária de argc e argv. Effeitos: apresenta JSON.
+ * Retorno: EXIT_SUCCESS no aceite remoto ou EXIT_FAILURE na recusa.
+ * Razão: main coordena sem conhecer CUDA, ublk ou governo do fio servidor.
+ */
+int main(int quantidade_de_argumentos, char *argumentos[])
+{
+    const char *raiz = RAIZ_ORDINARIA_DO_GOVERNO;
+    struct ordem_do_cliente ordem;
+    int primeiro = 1;
+    int resultado;
+
+    if (quantidade_de_argumentos >= 2 &&
+        strcmp(argumentos[1], "--root") == 0) {
+        if (quantidade_de_argumentos < 4) {
+            apresentar_uso_do_governo(argumentos[0]);
+            return EXIT_FAILURE;
+        }
+        raiz = argumentos[2];
+        primeiro = 3;
+    }
+    resultado = formar_ordem_do_cliente(
+        &ordem, quantidade_de_argumentos - primeiro, argumentos + primeiro);
+    if (resultado < 0) {
+        apresentar_uso_do_governo(argumentos[0]);
+        fprintf(stderr, "A ordem cliente foi recusada: %d.\n", resultado);
+        return EXIT_FAILURE;
+    }
+    resultado = executar_ordem_do_cliente(raiz, &ordem);
+    if (resultado < 0) {
+        fprintf(stderr, "A travessia do governo fallou: %d.\n", resultado);
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
 }

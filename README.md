@@ -57,14 +57,29 @@ fixar memória. A construção real, quando novamente consentida, será:
 ```text
 PKG_CONFIG_PATH=$HOME/.local/ublk-stack/lib/pkgconfig \
 make preparar_cuda DIRECTORIO_DO_CUDA=$HOME/.local/cuda-12.9
+make preparar_cliente
 sudo modprobe ublk_drv
 LD_LIBRARY_PATH=$HOME/.local/ublk-stack/lib \
-sudo ./construcao/vram-2-memory 1073741824 1 64 1048576 5000 0
+sudo -E ./construcao/vramdiskd 0
 ```
 
-As grandezas são capacidade, filas, profundidade, maior operação, prazo em
-millisegundos e índice facultativo da GPU. O dispositivo publicado permanece
-volátil e não recebe dados cuja perda seja irreparável.
+Noutro terminal, a instância já presente recebe as ordens pela tomada local:
+
+```text
+sudo ./construcao/vramdiskctl create 0 1073741824 1 64 1048576 5000 0
+sudo ./construcao/vramdiskctl status 0
+sudo ./construcao/vramdiskctl destroy 0
+```
+
+O primeiro zero é o índice da instância; as grandezas seguintes são capacidade,
+filas, profundidade, maior operação, prazo em millisegundos e GPU facultativa.
+Cada instância conserva `/run/vramdisk/<id>/control.sock` em modo `0660`, seu
+`pid` em `0640` e o directório em `0750`.
+
+A antiga forma `vram-2-memory CAP FILAS PROF MAX PRAZO [GPU]` foi retirada. Sua
+migração explícita é iniciar `vramdiskd ID` e enviar os mesmos números por
+`vramdiskctl create ID ...`; não ha segundo mecanismo que possua CUDA ou ublk.
+O dispositivo publicado permanece volátil e não recebe dados irreparáveis.
 
 ### A voz que contempla a machina
 

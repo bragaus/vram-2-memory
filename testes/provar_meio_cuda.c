@@ -1,5 +1,25 @@
 #include "../src/meio_cuda.h"
 
+/* Conserva quantas sentenças CUDA chegaram e qual foi a derradeira. */
+struct testemunho_da_conclusao_cuda {
+    int quantidade;
+    int erro;
+};
+
+/*
+ * Proposito: registrar cada conclusão entregue pela taboa CUDA.
+ * Pre-condições: argumento aponta para testemunho vivo.
+ * Effeitos: soma uma sentença e conserva seu erro.
+ * Retorno: nenhum. Razão: contar torna visível omissão ou duplicação.
+ */
+void testemunhar_conclusao_cuda(void *argumento, int erro)
+{
+    struct testemunho_da_conclusao_cuda *testemunho = argumento;
+
+    testemunho->quantidade++;
+    testemunho->erro = erro;
+}
+
 /*
  * PROVA DA TRAVESSIA CUDA
  * Proposito: confrontar escripta e leitura byte a byte por memória fixada.

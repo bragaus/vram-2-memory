@@ -251,3 +251,44 @@ int zerar_meio_cuda(struct transportador_cuda *transportador,
                         transportador->corrente) != cudaSuccess) return 0;
     return cudaStreamSynchronize(transportador->corrente) == cudaSuccess;
 }
+
+/*
+ * THEOREMA DA PREPARAÇÃO CUDA COMMUM
+ * Proposito: adquirir VRAM, transportadores e sentenças antes do alvo.
+ * Pre-condições: destino vazio e configuração pertencente ao domínio.
+ * Effeitos: publica contexto completo; restitue toda posse na falha.
+ * Retorno: zero no êxito, ou erro negativo sem estado parcial.
+ * Razão: filas e conclusões devem possuir morada antes da publicação.
+ */
+int preparar_meio_assincrono_cuda(
+    void **contexto, const struct configuracao_do_apparelho *configuracao)
+{
+    struct meio_assincrono_cuda *figura;
+    size_t quantidade_de_filas;
+
+    if (contexto == 0 || *contexto != 0 || configuracao == 0 ||
+        configuracao->capacidade_em_bytes == 0 ||
+        configuracao->quantidade_de_filas <= 0) return -EINVAL;
+    figura = calloc(1, sizeof(*figura));
+    if (figura == 0) return -ENOMEM;
+    if (!criar_meio_cuda(&figura->meio, configuracao->indice_da_gpu,
+                         configuracao->capacidade_em_bytes)) {
+        free(figura);
+        return -ENOMEM;
+    }
+    quantidade_de_filas = (size_t)configuracao->quantidade_de_filas;
+    figura->transportadores = calloc(
+        quantidade_de_filas, sizeof(*figura->transportadores));
+    figura->conclusoes = calloc(
+        quantidade_de_filas, sizeof(*figura->conclusoes));
+    if (figura->transportadores == 0 || figura->conclusoes == 0) {
+        free(figura->conclusoes);
+        free(figura->transportadores);
+        destruir_meio_cuda(&figura->meio);
+        free(figura);
+        return -ENOMEM;
+    }
+    figura->quantidade_de_filas = configuracao->quantidade_de_filas;
+    *contexto = figura;
+    return 0;
+}

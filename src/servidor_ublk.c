@@ -500,6 +500,9 @@ int desmontar_servidor_ublk(struct estado_do_servidor_ublk *servidor)
     int resultado = 0;
 
     if (servidor == 0) return -EINVAL;
+    (void)pthread_mutex_lock(&exclusao_do_governo);
+    if (servidor_em_exercicio == servidor) servidor_em_exercicio = 0;
+    (void)pthread_mutex_unlock(&exclusao_do_governo);
     if (servidor->dispositivo != 0) {
         ublksrv_dev_deinit(servidor->dispositivo);
         servidor->dispositivo = 0;
@@ -517,9 +520,6 @@ int desmontar_servidor_ublk(struct estado_do_servidor_ublk *servidor)
     if (servidor->memoria_fixada) {
         if (munlockall() != 0 && resultado == 0) resultado = -errno;
         servidor->memoria_fixada = 0;
-    }
-    if (servidor_em_exercicio == servidor) {
-        servidor_em_exercicio = 0;
     }
     return resultado;
 }

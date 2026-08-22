@@ -282,3 +282,36 @@ cliente declarou somente `libc` e nenhum symbolo indefinido CUDA ou ublk.
 `destroy` possuem provas portáteis com serviço fingido, enquanto a travessia
 real ublk em ambiente descartável pertence ao chamado #27. Nenhum privilégio,
 `fio`, formatação, montagem ou `swap` participou. **Q.E.D.**
+
+## § XVII. DO BLOCO DESCARTÁVEL
+
+O chamado #27 encerrou o perigo num QEMU 8.2.2 sem disco nem rede, accelerado
+por KVM sobre Intel Core i5-10400F. A convidada empregou Linux
+6.17.0-22-generic, duas CPU, 3072 MiB de RAM, `ublk_drv` do mesmo núcleo e
+`fio-3.42` na commissão `ab77643023f5d7e3c1b71a7576a564f368bf577a`.
+
+O hospedeiro não privilegiado executou:
+
+```text
+PKG_CONFIG_PATH=/home/bragaus/.local/ublk-stack/lib/pkgconfig \
+DIRECTORIO_DO_CUDA=/home/bragaus/.local/cuda-12.9 make provar_vm
+```
+
+A VM principiou sem ublk, publicou somente `/dev/ublkb0` com 1073741824
+octetos e conferiu em `sysfs` o par `259:0` e 2097152 sectores. Uma chamada
+`BLKSECDISCARD` foi recusada por `EOPNOTSUPP`, conforme o contracto do alvo.
+
+Três trabalhos `randrw`, directos e simultâneos, guardaram regiões disjuntas
+com blocos de 4 KiB, 64 KiB e 1 MiB durante 300 segundos e verificaram CRC32C.
+Todos terminaram com `err=0`, sem operação curta ou descartada. O grupo leu
+363 GiB a 1239 MiB/s e escreveu 363 GiB a 1238 MiB/s; o trabalho de 4 KiB
+alcançou 4930 IOPS de leitura e 4924 de escripta. O observatório permaneceu
+com zero erros, zero prazos e zero amostras perdidas.
+
+`vramdiskctl destroy 0` recebeu resposta verde; servidor, nó, relação `sysfs`,
+morada de governo e módulo foram restituídos. Uma repetição abreviada de cinco
+segundos confirmou também o código exterior zero da receita.
+
+**Limite conhecido:** os números medem RAM simulada dentro desta VM, não VRAM,
+PCIe ou capacidade da GPU. A experiência não formatou, montou nem activou
+`swap`, e nenhum bloco do hospedeiro foi entregue á convidada. **Q.E.D.**

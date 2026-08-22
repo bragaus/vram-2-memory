@@ -234,3 +234,48 @@ int aquecer_fila_do_meio_simulado(void *contexto, int indice_da_fila,
         !ler_meio_simulado(&figura->meio, 0, memoria, quantidade)) return -EIO;
     return 0;
 }
+
+/*
+ * LEMMA DA ESCRIVANINHA NUMERADA
+ * Proposito: achar a conclusão pertencente a uma fila válida.
+ * Pre-condições: nenhuma; contexto e índice poderão ser estranhos.
+ * Effeitos: nenhum. Retorno: escrivaninha ou nulo fora do domínio.
+ * Razão: toda consulta de fila emprega uma só demonstração de limites.
+ */
+static struct conclusao_simulada *achar_conclusao_simulada(
+    struct meio_assincrono_simulado *figura, int indice_da_fila)
+{
+    if (figura == 0 || indice_da_fila < 0 ||
+        indice_da_fila >= figura->quantidade_de_filas) return 0;
+    return &figura->conclusoes[indice_da_fila];
+}
+
+/*
+ * THEOREMA DA LEITURA PROMETTIDA
+ * Proposito: transportar agora e differir a sentença até a colheita.
+ * Pre-condições: fila ociosa, destino vivo e região contida.
+ * Effeitos: preenche o destino e arma exactamente uma conclusão.
+ * Retorno: zero quando acceita, ou erro negativo sem promessa ulterior.
+ * Razão: o simulador imita a separação temporal do futuro DMA.
+ */
+int submeter_leitura_ao_meio_simulado(
+    void *contexto, int indice_da_fila, uint64_t deslocamento, void *destino,
+    uint32_t quantidade_de_bytes, funcao_de_conclusao_do_meio concluir,
+    void *argumento)
+{
+    struct meio_assincrono_simulado *figura = contexto;
+    struct conclusao_simulada *conclusao = achar_conclusao_simulada(
+        figura, indice_da_fila);
+
+    if (conclusao == 0 || concluir == 0 || destino == 0 ||
+        !intervallo_do_meio_e_valido(
+            &figura->meio, deslocamento, quantidade_de_bytes)) return -EINVAL;
+    if (conclusao->pendente) return -EBUSY;
+    if (!ler_meio_simulado(&figura->meio, deslocamento, destino,
+                           quantidade_de_bytes)) return -EIO;
+    conclusao->concluir = concluir;
+    conclusao->argumento = argumento;
+    conclusao->erro = 0;
+    conclusao->pendente = 1;
+    return 0;
+}

@@ -186,6 +186,20 @@ int destruir_memoria_intermediaria_cuda(void *memoria)
 }
 
 /*
+ * COROLLARIO DA RESTITUIÇÃO EXTERIOR
+ * Proposito: adaptar cudaFreeHost á assinatura sem retorno da bibliotheca.
+ * Pre-condições: memória fixada ou nula. Effeitos: restitue a região.
+ * Retorno: nenhum. Razão: fila e etiqueta não participam da posse material.
+ */
+void destruir_memoria_exterior_cuda(
+    const struct ublksrv_queue *fila_exterior, void *memoria, int etiqueta)
+{
+    (void)fila_exterior;
+    (void)etiqueta;
+    destruir_memoria_intermediaria_cuda(memoria);
+}
+
+/*
  * LEMMA DA REGIAO CUDA
  * Proposito: julgar limites sem somma susceptível a transbordar.
  * Pre-condições: nenhuma. Effeitos: nenhum. Retorno: unidade ou zero.

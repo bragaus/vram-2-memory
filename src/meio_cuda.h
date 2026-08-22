@@ -76,6 +76,15 @@ void *reservar_memoria_exterior_cuda(
 int destruir_memoria_intermediaria_cuda(void *memoria);
 
 /*
+ * Proposito: adaptar a restituição CUDA á assinatura de libublksrv.
+ * Pre-condições: memória fixada ou nula; fila e etiqueta são exteriores.
+ * Effeitos: restitue a região. Retorno: nenhum.
+ * Razão: o meio encerra a posse material que elle proprio concedeu.
+ */
+void destruir_memoria_exterior_cuda(
+    const struct ublksrv_queue *fila_exterior, void *memoria, int etiqueta);
+
+/*
  * Proposito: copiar VRAM para memória CPU fixada pela corrente da fila.
  * Pre-condições: região contida e destino nascido de cudaHostAlloc.
  * Effeitos: submette DMA e espera sua conclusão. Retorno: unidade ou zero.

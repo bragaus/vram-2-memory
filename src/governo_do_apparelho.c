@@ -77,3 +77,20 @@ int crear_apparelho_governado(struct governo_do_apparelho *governo,
     (void)pthread_mutex_unlock(&governo->exclusao);
     return resultado == 0 ? 0 : -resultado;
 }
+
+/*
+ * Proposito: copiar um retrato indivisível do governo presente.
+ * Pre-condições: governo, estado e resultado vivos. Effeitos: copia ambos.
+ * Retorno: zero ou -EINVAL. Razão: uma só exclusão conserva sua coherência.
+ */
+int contemplar_apparelho_governado(
+    struct governo_do_apparelho *governo,
+    enum estado_do_governo_do_apparelho *estado, int *resultado)
+{
+    if (governo == 0 || estado == 0 || resultado == 0) return -EINVAL;
+    (void)pthread_mutex_lock(&governo->exclusao);
+    *estado = governo->estado;
+    *resultado = governo->resultado;
+    (void)pthread_mutex_unlock(&governo->exclusao);
+    return 0;
+}

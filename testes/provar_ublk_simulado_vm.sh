@@ -77,7 +77,7 @@ zstd -q -d -c "$modulo_ublk" > "$raiz_do_initramfs/lib/modules/ublk_drv.ko"
 
 directorio_de_libublk=$(PKG_CONFIG_PATH="$pkg_config_do_ublk" \
     pkg-config --variable=libdir ublksrv)
-LD_LIBRARY_PATH="$directorio_de_libublk:$directorio_do_cuda/lib64" \
+LD_LIBRARY_PATH="$directorio_de_libublk" \
     "$directorio_da_vm/copiar_elf_e_dependencias.sh" \
     "$raiz_do_initramfs" "$raiz_da_obra/construcao/vramdiskd"
 
@@ -86,9 +86,6 @@ install -m 0755 "$directorio_de_libublk/libublksrv.so.0" \
     "$raiz_do_initramfs/lib/libublksrv.so.0"
 install -m 0755 "$directorio_de_libublk/liburing.so.2" \
     "$raiz_do_initramfs/lib/liburing.so.2"
-install -m 0755 "$directorio_do_cuda/lib64/libcudart.so.12" \
-    "$raiz_do_initramfs/lib/libcudart.so.12"
-
 imagem_do_initramfs="$artefactos/initramfs-vramdisk.cpio.gz"
 (cd "$raiz_do_initramfs" &&
  find . -print0 | sort -z | cpio --null -o --format=newc 2>/dev/null |

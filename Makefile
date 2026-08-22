@@ -19,8 +19,11 @@ PROVAS := $(DIRECTORIO_DA_CONSTRUCAO)/provar_transicoes \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_registro_do_governo \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_tomada_do_governo \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_observatorio
-FONTES_DO_SERVIDOR := src/principal.c src/servidor_ublk.c src/alvo_ublk.c \
-	src/configuracao.c src/configuracao_decimal.c src/numero_decimal.c \
+FONTES_DO_SERVIDOR := src/principal_do_servidor.c src/instancia_do_servidor.c \
+	src/morada_do_governo.c src/registro_do_governo.c src/tomada_do_governo.c \
+	src/governo_do_apparelho.c src/servico_de_governo.c src/canal_de_governo.c \
+	src/protocolo_de_governo.c src/ordens_da_instancia.c src/carga_de_creacao.c \
+	src/servidor_ublk.c src/alvo_ublk.c src/configuracao.c src/numero_decimal.c \
 	src/estado_da_requisicao.c src/meio_simulado.c \
 	src/meio_cuda.c src/fila_de_requisicoes.c src/retrato_do_observatorio.c \
 	src/monitor_do_observatorio.c src/observador_de_si.c
@@ -28,7 +31,7 @@ FONTES_DO_CLIENTE := src/principal_do_governo.c src/canal_de_governo.c \
 	src/protocolo_de_governo.c src/morada_do_governo.c src/tomada_do_governo.c \
 	src/ordem_do_cliente.c src/carga_de_creacao.c src/configuracao_decimal.c \
 	src/numero_decimal.c src/configuracao.c
-SERVIDOR := $(DIRECTORIO_DA_CONSTRUCAO)/vram-2-memory
+SERVIDOR := $(DIRECTORIO_DA_CONSTRUCAO)/vramdiskd
 CLIENTE := $(DIRECTORIO_DA_CONSTRUCAO)/vramdiskctl
 PROVA_CUDA := $(DIRECTORIO_DA_CONSTRUCAO)/provar_meio_cuda
 DEMONSTRACAO := $(DIRECTORIO_DA_CONSTRUCAO)/demonstrar_observatorio

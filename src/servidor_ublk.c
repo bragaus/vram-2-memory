@@ -21,8 +21,6 @@ struct estado_do_servidor_ublk {
     const struct configuracao_do_apparelho *configuracao;
     const struct operacoes_do_meio *operacoes_do_meio;
     void *contexto_do_meio;
-    struct meio_simulado meio;
-    struct meio_cuda meio_cuda;
     struct ublksrv_ctrl_dev *controle;
     const struct ublksrv_dev *dispositivo;
     struct contadores_da_fila *contadores;
@@ -494,10 +492,6 @@ int desmontar_servidor_ublk(struct estado_do_servidor_ublk *servidor)
         servidor->contexto_do_meio != 0) {
         servidor->operacoes_do_meio->destruir(servidor->contexto_do_meio);
         servidor->contexto_do_meio = 0;
-    }
-    destruir_meio_simulado(&servidor->meio);
-    if (!destruir_meio_cuda(&servidor->meio_cuda) && resultado == 0) {
-        resultado = -EIO;
     }
     if (servidor->memoria_fixada) {
         if (munlockall() != 0 && resultado == 0) resultado = -errno;

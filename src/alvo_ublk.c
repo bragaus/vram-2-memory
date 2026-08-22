@@ -83,7 +83,7 @@ void destruir_memoria_ublk_cuda(const struct ublksrv_queue *fila_exterior,
  * Retorno: octetos, zero na descarga ou erro negativo.
  * Razão: a espera transitória conserva a conducta até o alvo assíncrono.
  */
-int transferir_pelo_contrato_do_meio(
+static int transferir_pelo_contrato_do_meio(
     struct contexto_da_fila_ublk *contexto, uint8_t operacao,
     uint64_t deslocamento, void *memoria, uint32_t quantidade_de_bytes)
 {
@@ -136,11 +136,16 @@ int transferir_requisicao_ublk(struct contexto_da_fila_ublk *contexto,
                                uint8_t operacao, uint64_t deslocamento,
                                void *memoria, uint32_t quantidade_de_bytes)
 {
-    if (contexto == 0 || quantidade_de_bytes > INT_MAX ||
-        (contexto->meio_simulado == 0) ==
-            (contexto->transportador_cuda == 0)) {
-        return -EINVAL;
+    if (contexto == 0 || quantidade_de_bytes > INT_MAX) return -EINVAL;
+    if (contexto->operacoes_do_meio != 0 ||
+        contexto->contexto_do_meio != 0) {
+        if (contexto->operacoes_do_meio == 0 ||
+            contexto->contexto_do_meio == 0) return -EINVAL;
+        return transferir_pelo_contrato_do_meio(
+            contexto, operacao, deslocamento, memoria, quantidade_de_bytes);
     }
+    if ((contexto->meio_simulado == 0) ==
+        (contexto->transportador_cuda == 0)) return -EINVAL;
     switch (operacao) {
     case UBLK_IO_OP_READ:
         if (contexto->transportador_cuda != 0) {

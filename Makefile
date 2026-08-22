@@ -36,10 +36,15 @@ CLIENTE := $(DIRECTORIO_DA_CONSTRUCAO)/vramdiskctl
 PROVA_CUDA := $(DIRECTORIO_DA_CONSTRUCAO)/provar_meio_cuda
 DEMONSTRACAO := $(DIRECTORIO_DA_CONSTRUCAO)/demonstrar_observatorio
 
-.PHONY: provar demonstrar_simulacao provar_cuda provar_pressao preparar_ublk preparar_cuda preparar_cliente limpar
+.PHONY: provar provar_integracao provar_vm demonstrar_simulacao provar_cuda provar_pressao preparar_ublk preparar_cuda preparar_cliente limpar
 
 provar: $(PROVAS)
 	@for prova in $(PROVAS); do $$prova; done
+
+provar_integracao: provar provar_vm
+
+provar_vm:
+	./testes/provar_ublk_simulado_vm.sh
 
 demonstrar_simulacao: $(DEMONSTRACAO)
 	$(DEMONSTRACAO)

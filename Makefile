@@ -9,6 +9,7 @@ PROVAS := $(DIRECTORIO_DA_CONSTRUCAO)/provar_transicoes \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_carga_de_creacao \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_governo_do_apparelho \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_ordens_da_instancia \
+	$(DIRECTORIO_DA_CONSTRUCAO)/provar_ordem_do_cliente \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_meio_simulado \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_fila_de_requisicoes \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_protocolo_de_governo \
@@ -61,6 +62,11 @@ $(DIRECTORIO_DA_CONSTRUCAO)/provar_ordens_da_instancia: testes/provar_ordens_da_
 		src/ordens_da_instancia.c src/governo_do_apparelho.c src/carga_de_creacao.c \
 		src/configuracao.c | $(DIRECTORIO_DA_CONSTRUCAO)
 	$(COMPILADOR) $(AVISOS) -pthread $^ -o $@
+
+$(DIRECTORIO_DA_CONSTRUCAO)/provar_ordem_do_cliente: testes/provar_ordem_do_cliente.c \
+		src/ordem_do_cliente.c src/carga_de_creacao.c src/configuracao_decimal.c \
+		src/numero_decimal.c src/configuracao.c | $(DIRECTORIO_DA_CONSTRUCAO)
+	$(COMPILADOR) $(AVISOS) $^ -o $@
 
 $(DIRECTORIO_DA_CONSTRUCAO)/provar_meio_simulado: \
 		testes/provar_meio_simulado.c src/meio_simulado.c | $(DIRECTORIO_DA_CONSTRUCAO)

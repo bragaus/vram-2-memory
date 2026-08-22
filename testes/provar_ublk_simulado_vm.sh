@@ -36,3 +36,29 @@ for caminho in "$kernel_da_vm" "$modulo_ublk" /bin/busybox; do
 done
 
 mkdir -p "$artefactos" "$raiz_do_initramfs"
+
+PKG_CONFIG_PATH="$pkg_config_do_ublk" make -C "$raiz_da_obra" \
+    preparar_cuda DIRECTORIO_DO_CUDA="$directorio_do_cuda"
+make -C "$raiz_da_obra" preparar_cliente
+cc -std=c11 -Wall -Wextra -Wpedantic -Werror -static \
+    "$directorio_da_vm/provar_operacao_invalida.c" \
+    -o "$artefactos/provar_operacao_invalida"
+cc -std=c11 -Wall -Wextra -Wpedantic -Werror -static \
+    "$directorio_da_vm/encerrar_vm.c" -o "$artefactos/encerrar_vm"
+"$directorio_da_vm/preparar_fio_estatico.sh" "$artefactos/fio"
+
+mkdir -p "$raiz_do_initramfs/bin" "$raiz_do_initramfs/lib/modules"
+install -m 0755 /bin/busybox "$raiz_do_initramfs/bin/busybox"
+install -m 0755 "$directorio_da_vm/init" "$raiz_do_initramfs/init"
+install -m 0644 "$directorio_da_vm/configuracao.env" \
+    "$raiz_do_initramfs/configuracao.env"
+install -m 0755 "$raiz_da_obra/construcao/vramdiskd" \
+    "$raiz_do_initramfs/bin/vramdiskd"
+install -m 0755 "$raiz_da_obra/construcao/vramdiskctl" \
+    "$raiz_do_initramfs/bin/vramdiskctl"
+install -m 0755 "$artefactos/fio" "$raiz_do_initramfs/bin/fio"
+install -m 0755 "$artefactos/provar_operacao_invalida" \
+    "$raiz_do_initramfs/bin/provar_operacao_invalida"
+install -m 0755 "$artefactos/encerrar_vm" \
+    "$raiz_do_initramfs/bin/encerrar_vm"
+zstd -q -d -c "$modulo_ublk" > "$raiz_do_initramfs/lib/modules/ublk_drv.ko"

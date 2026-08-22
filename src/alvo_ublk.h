@@ -26,9 +26,9 @@ struct contexto_da_fila_ublk {
 uint64_t ler_instante_monotonico(void);
 
 /*
- * Proposito: applicar uma operação ublk ao meio simulado.
- * Pre-condições: contexto vivo e região previamente cercada.
- * Effeitos: lê, escreve ou confirma descarga síncrona.
+ * Proposito: applicar uma operação ublk ao contracto commum do meio.
+ * Pre-condições: taboa, contexto e região previamente cercados.
+ * Effeitos: submette, colhe e traduz uma sentença ainda synchronamente.
  * Retorno: octetos transportados, zero na descarga ou erro negativo.
  * Razão: operações externas convergem numa sentença autoral verificável.
  */

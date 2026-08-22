@@ -144,39 +144,23 @@ int transferir_requisicao_ublk(struct contexto_da_fila_ublk *contexto,
         return transferir_pelo_contrato_do_meio(
             contexto, operacao, deslocamento, memoria, quantidade_de_bytes);
     }
-    if ((contexto->meio_simulado == 0) ==
-        (contexto->transportador_cuda == 0)) return -EINVAL;
+    if (contexto->transportador_cuda == 0) return -EINVAL;
     switch (operacao) {
     case UBLK_IO_OP_READ:
-        if (contexto->transportador_cuda != 0) {
-            return ler_meio_cuda(contexto->transportador_cuda, deslocamento,
-                                 memoria, quantidade_de_bytes) ?
-                   (int)quantidade_de_bytes : -EIO;
-        }
-        return ler_meio_simulado(contexto->meio_simulado, deslocamento, memoria,
-                                 quantidade_de_bytes) ?
+        return ler_meio_cuda(contexto->transportador_cuda, deslocamento,
+                             memoria, quantidade_de_bytes) ?
                (int)quantidade_de_bytes : -EIO;
     case UBLK_IO_OP_WRITE:
-        if (contexto->transportador_cuda != 0) {
-            return escrever_meio_cuda(contexto->transportador_cuda,
-                                      deslocamento, memoria,
-                                      quantidade_de_bytes) ?
-                   (int)quantidade_de_bytes : -EIO;
-        }
-        return escrever_meio_simulado(contexto->meio_simulado, deslocamento, memoria,
-                                      quantidade_de_bytes) ?
+        return escrever_meio_cuda(contexto->transportador_cuda,
+                                  deslocamento, memoria,
+                                  quantidade_de_bytes) ?
                (int)quantidade_de_bytes : -EIO;
     case UBLK_IO_OP_FLUSH:
         return 0;
     case UBLK_IO_OP_DISCARD:
     case UBLK_IO_OP_WRITE_ZEROES:
-        if (contexto->transportador_cuda != 0) {
-            return zerar_meio_cuda(contexto->transportador_cuda, deslocamento,
-                                   quantidade_de_bytes) ?
-                   (int)quantidade_de_bytes : -EIO;
-        }
-        return zerar_meio_simulado(contexto->meio_simulado, deslocamento,
-                                   quantidade_de_bytes) ?
+        return zerar_meio_cuda(contexto->transportador_cuda, deslocamento,
+                               quantidade_de_bytes) ?
                (int)quantidade_de_bytes : -EIO;
     default:
         return -EOPNOTSUPP;

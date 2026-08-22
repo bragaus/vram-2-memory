@@ -20,7 +20,7 @@ struct resultado_da_transferencia {
  * Effeitos: grava erro e marca conclusão. Retorno: nenhum.
  * Razão: a transição conserva a API antiga até o alvo tornar-se assíncrono.
  */
-void concluir_transferencia_do_meio(void *argumento, int erro)
+static void concluir_transferencia_do_meio(void *argumento, int erro)
 {
     struct resultado_da_transferencia *resultado = argumento;
 
@@ -74,6 +74,54 @@ void destruir_memoria_ublk_cuda(const struct ublksrv_queue *fila_exterior,
     (void)fila_exterior;
     (void)etiqueta;
     destruir_memoria_intermediaria_cuda(memoria);
+}
+/*
+ * THEOREMA DA PASSAGEM PELO CONTRACTO
+ * Proposito: submetter, colher e traduzir uma operação do meio commum.
+ * Pre-condições: contexto íntegro e quantidade representável em int.
+ * Effeitos: transporta ou zera e colhe uma única sentença da mesma fila.
+ * Retorno: octetos, zero na descarga ou erro negativo.
+ * Razão: a espera transitória conserva a conducta até o alvo assíncrono.
+ */
+int transferir_pelo_contrato_do_meio(
+    struct contexto_da_fila_ublk *contexto, uint8_t operacao,
+    uint64_t deslocamento, void *memoria, uint32_t quantidade_de_bytes)
+{
+    struct resultado_da_transferencia resultado = {0};
+    const struct operacoes_do_meio *operacoes = contexto->operacoes_do_meio;
+    int submissao;
+    if (operacoes == 0 || contexto->contexto_do_meio == 0 ||
+        quantidade_de_bytes > INT_MAX) return -EINVAL;
+    switch (operacao) {
+    case UBLK_IO_OP_READ:
+        submissao = operacoes->ler(
+            contexto->contexto_do_meio, contexto->indice_da_fila,
+            deslocamento, memoria, quantidade_de_bytes,
+            concluir_transferencia_do_meio, &resultado);
+        break;
+    case UBLK_IO_OP_WRITE:
+        submissao = operacoes->escrever(
+            contexto->contexto_do_meio, contexto->indice_da_fila,
+            deslocamento, memoria, quantidade_de_bytes,
+            concluir_transferencia_do_meio, &resultado);
+        break;
+    case UBLK_IO_OP_DISCARD:
+    case UBLK_IO_OP_WRITE_ZEROES:
+        submissao = operacoes->zerar(
+            contexto->contexto_do_meio, contexto->indice_da_fila,
+            deslocamento, quantidade_de_bytes,
+            concluir_transferencia_do_meio, &resultado);
+        break;
+    case UBLK_IO_OP_FLUSH:
+        return 0;
+    default:
+        return -EOPNOTSUPP;
+    }
+    if (submissao < 0) return submissao;
+    if (operacoes->colher(contexto->contexto_do_meio,
+                          contexto->indice_da_fila, 1) != 1 ||
+        !resultado.foi_concluida) return -EIO;
+    return resultado.erro == 0 ? (int)quantidade_de_bytes : resultado.erro;
 }
 
 /*

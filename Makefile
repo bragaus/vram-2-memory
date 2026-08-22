@@ -23,11 +23,16 @@ FONTES_DO_SERVIDOR := src/principal.c src/servidor_ublk.c src/alvo_ublk.c \
 	src/estado_da_requisicao.c src/meio_simulado.c \
 	src/meio_cuda.c src/fila_de_requisicoes.c src/retrato_do_observatorio.c \
 	src/monitor_do_observatorio.c src/observador_de_si.c
+FONTES_DO_CLIENTE := src/principal_do_governo.c src/canal_de_governo.c \
+	src/protocolo_de_governo.c src/morada_do_governo.c src/tomada_do_governo.c \
+	src/ordem_do_cliente.c src/carga_de_creacao.c src/configuracao_decimal.c \
+	src/numero_decimal.c src/configuracao.c
 SERVIDOR := $(DIRECTORIO_DA_CONSTRUCAO)/vram-2-memory
+CLIENTE := $(DIRECTORIO_DA_CONSTRUCAO)/vramdiskctl
 PROVA_CUDA := $(DIRECTORIO_DA_CONSTRUCAO)/provar_meio_cuda
 DEMONSTRACAO := $(DIRECTORIO_DA_CONSTRUCAO)/demonstrar_observatorio
 
-.PHONY: provar demonstrar_simulacao provar_cuda provar_pressao preparar_ublk preparar_cuda limpar
+.PHONY: provar demonstrar_simulacao provar_cuda provar_pressao preparar_ublk preparar_cuda preparar_cliente limpar
 
 provar: $(PROVAS)
 	@for prova in $(PROVAS); do $$prova; done
@@ -108,6 +113,7 @@ $(DEMONSTRACAO): demonstracoes/demonstrar_observatorio.c src/meio_simulado.c \
 
 preparar_ublk: $(SERVIDOR)
 preparar_cuda: $(SERVIDOR)
+preparar_cliente: $(CLIENTE)
 provar_cuda: $(PROVA_CUDA)
 	$(PROVA_CUDA)
 
@@ -124,5 +130,8 @@ $(SERVIDOR): $(FONTES_DO_SERVIDOR) | $(DIRECTORIO_DA_CONSTRUCAO)
 		$$(pkg-config --libs ublksrv) -L$(DIRECTORIO_DO_CUDA)/lib64 \
 		-Wl,-rpath,$(DIRECTORIO_DO_CUDA)/lib64 -lcudart -pthread
 
+$(CLIENTE): $(FONTES_DO_CLIENTE) | $(DIRECTORIO_DA_CONSTRUCAO)
+	$(COMPILADOR) $(AVISOS) $^ -o $@
+
 limpar:
-	rm -f $(PROVAS) $(PROVA_CUDA) $(SERVIDOR) $(DEMONSTRACAO)
+	rm -f $(PROVAS) $(PROVA_CUDA) $(SERVIDOR) $(CLIENTE) $(DEMONSTRACAO)

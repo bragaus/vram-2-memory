@@ -455,3 +455,35 @@ int submeter_escripta_ao_meio_cuda(
     conclusao->pendente = 1;
     return 0;
 }
+
+/*
+ * COROLLARIO DO ZERO CUDA PROMETTIDO
+ * Proposito: apagar a VRAM e differir a sentença até a colheita.
+ * Pre-condições: fila ociosa e região contida no reservatório.
+ * Effeitos: reduz a região a zero e arma exactamente uma conclusão.
+ * Retorno: zero quando acceita, ou erro negativo sem promessa ulterior.
+ * Razão: descarte e zero explícito partilham uma só operação material.
+ */
+int submeter_zeragem_ao_meio_cuda(
+    void *contexto, int indice_da_fila, uint64_t deslocamento,
+    uint32_t quantidade_de_bytes, funcao_de_conclusao_do_meio concluir,
+    void *argumento)
+{
+    struct meio_assincrono_cuda *figura = contexto;
+    struct transportador_cuda *transportador = achar_transportador_cuda(
+        figura, indice_da_fila);
+    struct conclusao_cuda *conclusao = achar_conclusao_cuda(
+        figura, indice_da_fila);
+
+    if (conclusao == 0 || concluir == 0 ||
+        !regiao_cuda_e_valida(transportador, deslocamento,
+                              quantidade_de_bytes)) return -EINVAL;
+    if (conclusao->pendente) return -EBUSY;
+    if (!zerar_meio_cuda(transportador, deslocamento,
+                         quantidade_de_bytes)) return -EIO;
+    conclusao->concluir = concluir;
+    conclusao->argumento = argumento;
+    conclusao->erro = 0;
+    conclusao->pendente = 1;
+    return 0;
+}

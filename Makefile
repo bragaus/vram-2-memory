@@ -26,6 +26,7 @@ FONTES_DO_SERVIDOR := src/principal_do_servidor.c src/instancia_do_servidor.c \
 	src/governo_do_apparelho.c src/servico_de_governo.c src/canal_de_governo.c \
 	src/protocolo_de_governo.c src/ordens_da_instancia.c src/carga_de_creacao.c \
 	src/servidor_ublk.c src/alvo_ublk.c src/configuracao.c src/numero_decimal.c \
+	src/parada_limitada_ublk.c \
 	src/estado_da_requisicao.c src/plano_da_memoria.c src/reserva_de_buffers.c \
 	src/meio_simulado.c \
 	src/meio_cuda.c src/fila_de_requisicoes.c src/retrato_do_observatorio.c \

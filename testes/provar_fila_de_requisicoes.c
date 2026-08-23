@@ -15,6 +15,7 @@ int main(void)
     unsigned char memoria[16] = {0};
     struct registro_da_requisicao *registro;
     unsigned int erro;
+    uint32_t etiqueta_vencida = UINT32_MAX;
 
     for (erro = 0; erro < 7; erro++) {
         if (registrar_resultado_na_saude_da_fila(&primeira, -1, 0) != 0)
@@ -59,6 +60,16 @@ int main(void)
         falhar_requisicao_vencida(&fila, 1, 299, 100, -1) ||
         !falhar_requisicao_vencida(&fila, 1, 300, 100, -1) ||
         concluir_requisicao_na_fila(&fila, 1, 16)) {
+        destruir_fila_de_requisicoes(&fila);
+        return 1;
+    }
+    if (iniciar_requisicao_na_fila(
+            &fila, 0, 12288, 16, 0, memoria, 400) == 0 ||
+        falhar_primeira_requisicao_vencida(
+            &fila, 549, 150, -1, &etiqueta_vencida) ||
+        !falhar_primeira_requisicao_vencida(
+            &fila, 550, 150, -1, &etiqueta_vencida) ||
+        etiqueta_vencida != 0) {
         destruir_fila_de_requisicoes(&fila);
         return 1;
     }

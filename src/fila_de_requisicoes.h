@@ -93,4 +93,16 @@ int falhar_requisicao_vencida(struct fila_de_requisicoes *fila,
                               uint32_t etiqueta, uint64_t instante_actual,
                               uint64_t prazo, int resultado);
 
+/*
+ * Proposito: achar e condemnar a primeira transferência já vencida.
+ * Pre-condições: relógio monotónico, prazo positivo e destino de etiqueta.
+ * Effeitos: torna terminal no máximo um registro ainda transferindo.
+ * Retorno: unidade no encontro ou zero quando nenhuma promessa venceu.
+ * Razão: a colheita precisa descobrir o prazo sem esperar o evento terminar.
+ */
+int falhar_primeira_requisicao_vencida(struct fila_de_requisicoes *fila,
+                                       uint64_t instante_actual,
+                                       uint64_t prazo, int resultado,
+                                       uint32_t *etiqueta_vencida);
+
 #endif

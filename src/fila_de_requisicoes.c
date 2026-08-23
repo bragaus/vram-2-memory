@@ -202,3 +202,28 @@ int falhar_requisicao_vencida(struct fila_de_requisicoes *fila,
     registro->estado = ESTADO_DA_REQUISICAO_FALHOU;
     return 1;
 }
+
+/*
+ * COROLLARIO DA PRIMEIRA PROMESSA VENCIDA
+ * Proposito: percorrer uma fila e sentenciar seu primeiro prazo consumido.
+ * Pre-condições: fila proprietária, instante, prazo e destino válidos.
+ * Effeitos: falla no máximo uma etiqueta. Retorno: unidade ou zero.
+ * Razão: uma única ruína basta para impedir nova busca na fila enferma.
+ */
+int falhar_primeira_requisicao_vencida(struct fila_de_requisicoes *fila,
+                                       uint64_t instante_actual,
+                                       uint64_t prazo, int resultado,
+                                       uint32_t *etiqueta_vencida)
+{
+    uint32_t etiqueta;
+
+    if (fila == 0 || etiqueta_vencida == 0) return 0;
+    for (etiqueta = 0; etiqueta < fila->profundidade; etiqueta++) {
+        if (falhar_requisicao_vencida(
+                fila, etiqueta, instante_actual, prazo, resultado)) {
+            *etiqueta_vencida = etiqueta;
+            return 1;
+        }
+    }
+    return 0;
+}

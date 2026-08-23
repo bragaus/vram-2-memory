@@ -112,9 +112,9 @@ static int conferir_memoria_fixavel_do_servidor(
 
 /*
  * THEOREMA DOS BUFFERS ANTERIORES
- * Proposito: adquirir e registrar todos os buffers CUDA antes do controle.
- * Pre-condições: meio CUDA preparado e geometria julgada.
- * Effeitos: publica a reserva completa e sua marca de registro.
+ * Proposito: adquirir todos os buffers e registrá-los quando houver CUDA.
+ * Pre-condições: meio preparado e geometria julgada.
+ * Effeitos: publica a reserva completa e, no CUDA, sua marca de registro.
  * Retorno: zero ou erro negativo depois de restituir posse parcial.
  * Razão: callback de etiqueta limitar-se-á a escolher memória já existente.
  */
@@ -124,13 +124,14 @@ static int preparar_buffers_do_servidor(
     const struct configuracao_do_apparelho *configuracao;
     int resultado;
 
-    if (servidor == 0 || !servidor->empregar_cuda) return 0;
+    if (servidor == 0) return -EINVAL;
     configuracao = servidor->configuracao;
     resultado = criar_reserva_de_buffers(
         &servidor->reserva_de_buffers, configuracao->quantidade_de_filas,
         configuracao->profundidade_das_filas,
         configuracao->maior_operacao_em_bytes);
     if (resultado < 0) return resultado;
+    if (!servidor->empregar_cuda) return 0;
     if (!registrar_memoria_intermediaria_cuda(
             servidor->reserva_de_buffers.inicio,
             (size_t)servidor->reserva_de_buffers.quantidade_em_bytes)) {
@@ -314,6 +315,33 @@ int inicializar_alvo_ublk(struct ublksrv_dev *dispositivo, int tipo,
 }
 
 /*
+ * LEMMA DA RESPOSTA ANTERIOR
+ * Proposito: contar a prova da fila e retê-la até a sentença dirigente.
+ * Pre-condições: portão vivo e resultado definitivo da preparação da fila.
+ * Effeitos: publica a resposta e espera abertura, inclusive quando fallou.
+ * Retorno: nenhum. Razão: toda saída do trabalhador encontra o dirigente.
+ */
+static void responder_ao_portao_da_publicacao(
+    struct incumbencia_da_fila_ublk *incumbencia)
+{
+    struct estado_do_servidor_ublk *servidor = incumbencia->servidor;
+    int resultado = 0;
+
+    (void)pthread_mutex_lock(&servidor->exclusao_da_publicacao);
+    servidor->filas_que_responderam++;
+    (void)pthread_cond_broadcast(&servidor->mudanca_da_publicacao);
+    while (!servidor->filas_liberadas && resultado == 0) {
+        resultado = pthread_cond_wait(&servidor->mudanca_da_publicacao,
+                                      &servidor->exclusao_da_publicacao);
+    }
+    if (resultado != 0 && incumbencia->resultado >= 0)
+        incumbencia->resultado = -resultado;
+    if (servidor->filas_liberadas < 0 && incumbencia->resultado >= 0)
+        incumbencia->resultado = -ECANCELED;
+    (void)pthread_mutex_unlock(&servidor->exclusao_da_publicacao);
+}
+
+/*
  * THEOREMA DO TRABALHADOR DA FILA
  * Proposito: servir uma fila exterior no seu único fio de execução.
  * Pre-condições: dispositivo e incumbência preparados antes do fio nascer.
@@ -324,7 +352,8 @@ int inicializar_alvo_ublk(struct ublksrv_dev *dispositivo, int tipo,
 void *servir_fila_ublk(void *argumento)
 {
     struct incumbencia_da_fila_ublk *incumbencia = argumento;
-    const struct ublksrv_queue *fila_exterior;
+    const struct ublksrv_queue *fila_exterior = 0;
+    void *memoria;
 
     incumbencia->resultado = -ENOMEM;
     incumbencia->contexto.fila = &incumbencia->fila;
@@ -338,9 +367,19 @@ void *servir_fila_ublk(void *argumento)
     incumbencia->resultado = incumbencia->contexto.operacoes_do_meio
         ->vincular_fila(incumbencia->contexto.contexto_do_meio,
                        incumbencia->contexto.indice_da_fila);
-    if (incumbencia->resultado < 0) {
-        return argumento;
-    }
+    if (incumbencia->resultado < 0) goto responder;
+    memoria = achar_buffer_reservado(
+        &incumbencia->servidor->reserva_de_buffers, incumbencia->indice, 0,
+        incumbencia->servidor->configuracao->maior_operacao_em_bytes);
+    incumbencia->resultado = incumbencia->contexto.operacoes_do_meio
+        ->aquecer_fila(incumbencia->contexto.contexto_do_meio,
+                       incumbencia->contexto.indice_da_fila, memoria,
+                       incumbencia->servidor->configuracao
+                           ->maior_operacao_em_bytes);
+    if (incumbencia->resultado < 0) goto responder;
+responder:
+    responder_ao_portao_da_publicacao(incumbencia);
+    if (incumbencia->resultado < 0) return argumento;
     incumbencia->contexto.prazo_em_nanossegundos =
         (uint64_t)incumbencia->servidor->configuracao
             ->prazo_da_operacao_em_milissegundos * 1000000ULL;
@@ -349,6 +388,7 @@ void *servir_fila_ublk(void *argumento)
         &incumbencia->contexto);
     if (fila_exterior == 0) {
         incumbencia->resultado = -ENODEV;
+        ublksrv_ctrl_stop_dev(incumbencia->servidor->controle);
         return argumento;
     }
     do {
@@ -429,6 +469,46 @@ int iniciar_filas_ublk(struct estado_do_servidor_ublk *servidor,
         (*quantidade_iniciada)++;
     }
     return 0;
+}
+
+/*
+ * THEOREMA DA PUBLICACAO JULGADA
+ * Proposito: esperar todas as provas, publicar no êxito e abrir o portão.
+ * Pre-condições: somente a quantidade informada de fios chegou a nascer.
+ * Effeitos: chama START_DEV uma vez no êxito e liberta todos os respondentes.
+ * Retorno: primeiro erro da abertura, prova, espera ou publicação.
+ * Razão: o núcleo não verá fila cuja matéria e transporte não foram provados.
+ */
+static int julgar_filas_e_publicar(
+    struct estado_do_servidor_ublk *servidor, uint32_t quantidade_iniciada,
+    int resultado_da_abertura)
+{
+    uint32_t indice;
+    int resultado = resultado_da_abertura;
+    int resultado_da_espera = 0;
+
+    (void)pthread_mutex_lock(&servidor->exclusao_da_publicacao);
+    while (servidor->filas_que_responderam < quantidade_iniciada &&
+           resultado_da_espera == 0) {
+        resultado_da_espera = pthread_cond_wait(
+            &servidor->mudanca_da_publicacao,
+            &servidor->exclusao_da_publicacao);
+    }
+    if (resultado == 0 && resultado_da_espera != 0)
+        resultado = -resultado_da_espera;
+    for (indice = 0; resultado == 0 && indice < quantidade_iniciada;
+         indice++) {
+        if (servidor->incumbencias[indice].resultado < 0)
+            resultado = servidor->incumbencias[indice].resultado;
+    }
+    if (resultado == 0 && atomic_load_explicit(
+            &termo_requerido, memory_order_relaxed)) resultado = -ECANCELED;
+    servidor->filas_liberadas = resultado == 0 ? 1 : -1;
+    (void)pthread_cond_broadcast(&servidor->mudanca_da_publicacao);
+    (void)pthread_mutex_unlock(&servidor->exclusao_da_publicacao);
+    if (resultado == 0)
+        resultado = ublksrv_ctrl_start_dev(servidor->controle, getpid());
+    return resultado;
 }
 
 /*
@@ -792,9 +872,8 @@ int executar_servidor_com_meio(
     }
     resultado = iniciar_filas_ublk(
         &servidor, servidor.incumbencias, &quantidade_iniciada);
-    if (resultado == 0) {
-        resultado = ublksrv_ctrl_start_dev(servidor.controle, getpid());
-    }
+    resultado = julgar_filas_e_publicar(
+        &servidor, quantidade_iniciada, resultado);
     if (resultado == 0) resultado = iniciar_observatorio_ublk(&servidor);
     if (resultado < 0) ublksrv_ctrl_stop_dev(servidor.controle);
     {

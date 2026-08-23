@@ -5,6 +5,7 @@
 #include "monitor_do_observatorio.h"
 #include "observador_de_si.h"
 #include "plano_da_memoria.h"
+#include "reserva_de_buffers.h"
 #include <errno.h>
 #include <limits.h>
 #include <pthread.h>
@@ -29,10 +30,12 @@ struct estado_do_servidor_ublk {
     struct ublksrv_ctrl_dev *controle;
     const struct ublksrv_dev *dispositivo;
     struct contadores_da_fila *contadores;
+    struct reserva_de_buffers reserva_de_buffers;
     pthread_t fio_do_observatorio;
     atomic_int ordenar_termo_do_observatorio;
     int observatorio_iniciado;
     int empregar_cuda;
+    int buffers_registrados;
     int memoria_fixada;
 };
 /* Cada trabalhador possue fila autoral e fila exterior de igual índice. */

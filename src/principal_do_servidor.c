@@ -20,7 +20,10 @@ struct opcoes_do_servidor {
     int meio_simulado;
 };
 
-struct escolha_do_meio_servidor { int simulado; };
+struct escolha_do_meio_servidor {
+    struct governo_do_apparelho *governo;
+    int simulado;
+};
 
 /*
  * Proposito: julgar raiz, modo de prova e índice da entrada servidora.
@@ -81,8 +84,8 @@ int servir_meio_governado(
     const struct escolha_do_meio_servidor *escolha = contexto;
 
     if (escolha != 0 && escolha->simulado)
-        return executar_servidor_ublk(configuracao);
-    return executar_servidor_cuda(configuracao);
+        return executar_servidor_ublk(configuracao, escolha->governo);
+    return executar_servidor_cuda(configuracao, escolha->governo);
 }
 
 /*
@@ -120,6 +123,7 @@ int main(int quantidade_de_argumentos, char *argumentos[])
                 argumentos[0]);
         return EXIT_FAILURE;
     }
+    escolha.governo = 0;
     escolha.simulado = opcoes.meio_simulado;
     resultado = abrir_instancia_do_servidor(
         &instancia, opcoes.raiz, opcoes.indice,
@@ -128,6 +132,7 @@ int main(int quantidade_de_argumentos, char *argumentos[])
         fprintf(stderr, "A instância servidora foi recusada: %d.\n", resultado);
         return EXIT_FAILURE;
     }
+    escolha.governo = &instancia.governo;
     printf("vramdiskd: tomada=%s pid=%s\n",
            instancia.morada.tomada, instancia.morada.processo);
     (void)fflush(stdout);

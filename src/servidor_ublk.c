@@ -30,6 +30,7 @@ struct incumbencia_da_fila_ublk;
 /* O servidor reune a configuração, o meio e as duas faces do dispositivo. */
 struct estado_do_servidor_ublk {
     const struct configuracao_do_apparelho *configuracao;
+    struct governo_do_apparelho *governo;
     const struct operacoes_do_meio *operacoes_do_meio;
     void *contexto_do_meio;
     struct ublksrv_ctrl_dev *controle;
@@ -626,11 +627,15 @@ static int julgar_filas_e_publicar(
     }
     if (resultado == 0 && atomic_load_explicit(
             &termo_requerido, memory_order_relaxed)) resultado = -ECANCELED;
+    if (resultado == 0) resultado = publicar_estado_operacional_do_apparelho(
+        servidor->governo, ESTADO_DO_GOVERNO_PRONTO);
     servidor->filas_liberadas = resultado == 0 ? 1 : -1;
     (void)pthread_cond_broadcast(&servidor->mudanca_da_publicacao);
     (void)pthread_mutex_unlock(&servidor->exclusao_da_publicacao);
     if (resultado == 0)
         resultado = ublksrv_ctrl_start_dev(servidor->controle, getpid());
+    if (resultado == 0) resultado = publicar_estado_operacional_do_apparelho(
+        servidor->governo, ESTADO_DO_GOVERNO_SERVINDO);
     return resultado;
 }
 
@@ -975,19 +980,22 @@ int preparar_servidor_ublk(struct estado_do_servidor_ublk *servidor,
 /*
  * THEOREMA DO SERVICO UBLK
  * Proposito: preparar, publicar, servir e desmontar o apparelho completo.
- * Pre-condições: configuração julgada e libublksrv disponível.
+ * Pre-condições: configuração, governo e libublksrv disponíveis.
  * Effeitos: expõe bloco volátil até interrupção ou falha de fila.
  * Retorno: zero no termo regular ou a primeira falha negativa.
  * Razão: toda saída converge pela mesma successão inversa de limpeza.
  */
 int executar_servidor_com_meio(
-    const struct configuracao_do_apparelho *configuracao, int empregar_cuda)
+    const struct configuracao_do_apparelho *configuracao, int empregar_cuda,
+    struct governo_do_apparelho *governo)
 {
     struct estado_do_servidor_ublk servidor = {0};
     uint32_t quantidade_iniciada = 0;
     int resultado;
     int resultado_do_desmonte;
 
+    if (governo == 0) return -EINVAL;
+    servidor.governo = governo;
     resultado = preparar_servidor_ublk(
         &servidor, configuracao, empregar_cuda);
     if (resultado < 0) return resultado;
@@ -1018,23 +1026,25 @@ int executar_servidor_com_meio(
 
 /*
  * Proposito: servir a experiência ublk sobre RAM ordinária.
- * Pre-condições: configuração válida. Effeitos: governa o serviço completo.
+ * Pre-condições: configuração e governo válidos. Effeitos: serve por inteiro.
  * Retorno: zero ou primeira falha. Razão: conserva a prova sem GPU.
  */
 int executar_servidor_ublk(
-    const struct configuracao_do_apparelho *configuracao)
+    const struct configuracao_do_apparelho *configuracao,
+    struct governo_do_apparelho *governo)
 {
-    return executar_servidor_com_meio(configuracao, 0);
+    return executar_servidor_com_meio(configuracao, 0, governo);
 }
 
 /*
  * Proposito: servir o apparelho ublk sobre VRAM e DMA CUDA.
- * Pre-condições: configuração, GPU e dependências exteriores válidas.
+ * Pre-condições: configuração, governo, GPU e dependências válidas.
  * Effeitos: governa o serviço completo. Retorno: zero ou primeira falha.
  * Razão: esta entrada activa correntes e buffers fixados em cada fila.
  */
 int executar_servidor_cuda(
-    const struct configuracao_do_apparelho *configuracao)
+    const struct configuracao_do_apparelho *configuracao,
+    struct governo_do_apparelho *governo)
 {
-    return executar_servidor_com_meio(configuracao, 1);
+    return executar_servidor_com_meio(configuracao, 1, governo);
 }

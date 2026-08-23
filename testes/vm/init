@@ -41,7 +41,7 @@ if [ -e "$1" ]; then
     exit 20
 fi
 
-LD_LIBRARY_PATH=/lib /bin/vramdiskd --backend simulado --audiencias 2 0 &
+LD_LIBRARY_PATH=/lib /bin/vramdiskd --backend simulado --audiencias 3 0 &
 processo_do_servidor=$!
 
 tentativa=0
@@ -74,6 +74,13 @@ test -n "$major_e_minor"
 test "$(readlink -f "/sys/dev/block/$major_e_minor")" = "$(readlink -f "$1")"
 sectores=$(cat "$1/size")
 test "$sectores" -eq "$((CAPACIDADE_DO_APPARELHO / 512))"
+
+retrato_do_servico=$(LD_LIBRARY_PATH=/lib /bin/vramdiskctl status 0)
+echo "$retrato_do_servico"
+case "$retrato_do_servico" in
+    *'"estado":"SERVINDO"'*) ;;
+    *) echo "Estado operacional ausente." >&2; exit 21 ;;
+esac
 
 echo "VM: bloco $nome_do_bloco, par $major_e_minor, capacidade provada."
 

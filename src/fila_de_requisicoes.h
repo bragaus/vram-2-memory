@@ -6,6 +6,23 @@ struct fila_de_requisicoes {
     struct registro_da_requisicao *registros;
     uint32_t profundidade;
 };
+
+/* A saúde local conserva somente a série da fila que a possue. */
+struct saude_da_fila {
+    unsigned int erros_consecutivos;
+    int falha_terminal;
+};
+
+/*
+ * Proposito: julgar o resultado seguinte na série exclusiva de uma fila.
+ * Pre-condições: saúde viva; falha irrecuperável acompanha resultado negativo.
+ * Effeitos: êxito zera a série; oitavo erro ou ruína immediata torna terminal.
+ * Retorno: zero saudável, unidade terminal ou -EINVAL no domínio.
+ * Razão: o êxito de uma fila jámais absolve os erros de sua irmã.
+ */
+int registrar_resultado_na_saude_da_fila(struct saude_da_fila *saude,
+                                         int resultado,
+                                         int falha_irrecuperavel);
 /*
  * Proposito: preparar todos os registros antes de publicar a fila.
  * Pre-condições: fila vazia e profundidade positiva representável.

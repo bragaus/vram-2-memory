@@ -11,8 +11,27 @@
 int main(void)
 {
     struct fila_de_requisicoes fila = {0};
+    struct saude_da_fila primeira = {0}, segunda = {0};
     unsigned char memoria[16] = {0};
     struct registro_da_requisicao *registro;
+    unsigned int erro;
+
+    for (erro = 0; erro < 7; erro++) {
+        if (registrar_resultado_na_saude_da_fila(&primeira, -1, 0) != 0)
+            return 1;
+    }
+    if (registrar_resultado_na_saude_da_fila(&segunda, -1, 0) != 0 ||
+        registrar_resultado_na_saude_da_fila(&primeira, 0, 0) != 0 ||
+        primeira.erros_consecutivos != 0 ||
+        segunda.erros_consecutivos != 1) return 1;
+    for (erro = 0; erro < 8; erro++) {
+        int terminal = registrar_resultado_na_saude_da_fila(
+            &primeira, -1, 0);
+        if (terminal != (erro == 7)) return 1;
+    }
+    if (registrar_resultado_na_saude_da_fila(&primeira, 0, 0) != 1 ||
+        registrar_resultado_na_saude_da_fila(&segunda, -1, 1) != 1)
+        return 1;
 
     if (!criar_fila_de_requisicoes(&fila, 2) ||
         criar_fila_de_requisicoes(&fila, 2)) {

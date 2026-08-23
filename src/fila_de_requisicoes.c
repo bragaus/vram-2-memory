@@ -1,6 +1,31 @@
 #include "fila_de_requisicoes.h"
 
+#include <errno.h>
 #include <stdlib.h>
+
+/*
+ * THEOREMA DA OITAVA FALHA
+ * Proposito: conservar a série de erros e reconhecer sua ruína terminal.
+ * Pre-condições: saúde viva e indicação fatal coherente com erro negativo.
+ * Effeitos: zera no êxito, conta no erro e sela a fila ao oitavo ou fatal.
+ * Retorno: zero saudável, unidade terminal ou -EINVAL no domínio.
+ * Razão: uma sentença victoriosa só interrompe a série da própria fila.
+ */
+int registrar_resultado_na_saude_da_fila(struct saude_da_fila *saude,
+                                         int resultado,
+                                         int falha_irrecuperavel)
+{
+    if (saude == 0 || (falha_irrecuperavel && resultado >= 0)) return -EINVAL;
+    if (saude->falha_terminal) return 1;
+    if (resultado >= 0) {
+        saude->erros_consecutivos = 0;
+        return 0;
+    }
+    if (saude->erros_consecutivos < 8) saude->erros_consecutivos++;
+    if (falha_irrecuperavel || saude->erros_consecutivos == 8)
+        saude->falha_terminal = 1;
+    return saude->falha_terminal;
+}
 
 /*
  * THEOREMA DA FILA PREPARADA

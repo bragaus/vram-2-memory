@@ -86,6 +86,14 @@ evento antes de consentir `START_DEV`. Durante o serviço, cada etiqueta possue
 evento CUDA sem medição; submissão e colheita são separadas, e somente a
 callback no fio proprietário conclue e rearma o pedido ublk.
 
+O estado exterior percorre `INICIALIZANDO`, `PRONTO`, `SERVINDO`,
+`ENCERRANDO`, `ENCERRADO` ou `FALHOU`. A colheita consulta o prazo monotónico
+mesmo quando o evento CUDA permanece `NOT_READY`; oito erros consecutivos da
+mesma fila, ou uma falha fatal do contexto, selam o servidor. Nesse termo não
+se armam novas buscas, operações que ainda podem ser concluídas recebem
+`-EIO`, e `STOP_DEV` é ligado a um timeout de dois segundos. Memória ainda
+tocada por DMA vencido fica em quarentena até o fim do processo.
+
 A antiga forma `vram-2-memory CAP FILAS PROF MAX PRAZO [GPU]` foi retirada. Sua
 migração explícita é iniciar `vramdiskd ID` e enviar os mesmos números por
 `vramdiskctl create ID ...`; não ha segundo mecanismo que possua CUDA ou ublk.

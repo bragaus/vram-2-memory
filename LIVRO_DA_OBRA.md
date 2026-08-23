@@ -437,3 +437,59 @@ trabalhos concorrentes confrontaram 4 KiB, 64 KiB e 1 MiB com CRC32C e
 **Limite conhecido:** a fila hoje cede CPU e torna a consultar eventos enquanto
 possue DMA pendente. Prazo finito, falha terminal e drenagem limitada pertencem
 ao chamado #31. O bloco CUDA real ainda não foi publicado. **Q.E.D.**
+
+## § XXI. DO TERMO FINITO DAS FILAS
+
+O chamado #31 deu ao apparelho os estados exteriores `INICIALIZANDO`, `PRONTO`,
+`SERVINDO`, `ENCERRANDO`, `ENCERRADO` e `FALHOU`. O governo publica os dois
+marcos operacionaes somente quando o serviço os demonstra: `PRONTO` depois do
+aquecimento unanime das filas e `SERVINDO` depois da aceitação de `START_DEV`.
+A falha conserva seu nome e resultado mesmo quando o fio já havia terminado
+antes da ordem de reunião.
+
+Cada fila possue sua própria série de erros. Êxito zera somente essa série; o
+oitavo erro consecutivo sela o servidor, e `-ENODEV` vindo da consulta de um
+evento CUDA representa ruína immediata do contexto. Depois do sello cessam
+novas buscas, e pedidos cuja conclusão ainda é segura recebem `-EIO`.
+
+O trabalhador consulta `CLOCK_MONOTONIC` dentro da colheita. Assim, uma
+promessa `NOT_READY` que alcança seu prazo torna-se `-ETIMEDOUT` sem depender
+do próprio evento concluir. Buffer, registro, evento e contexto ainda tocados
+por esse DMA não são libertados: ficam em quarentena até o termo do processo,
+pois jámais se allega recuperar o conteúdo de um contexto morto.
+
+A parada deixou de chamar a espera aberta da bibliotheca. Uma porta de controle
+e um anel SQE128 próprios submettem `STOP_DEV` ligado a
+`IORING_OP_LINK_TIMEOUT`, com limite de dois segundos; concorrentes contemplam
+a mesma sentença. No vencimento, anel, descritor e posses materiais permanecem
+vivos, preferindo vazamento finito a uso depois da libertação ou espera sem
+termo.
+
+Executaram-se:
+
+```text
+make -B provar
+ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 \
+UBSAN_OPTIONS=halt_on_error=1 \
+  make -B provar \
+  COMPILADOR='cc -fsanitize=address,undefined -fno-omit-frame-pointer'
+make -B provar_cuda
+/home/bragaus/.local/cuda-12.9/bin/compute-sanitizer \
+  --tool memcheck --leak-check full ./construcao/provar_meio_cuda
+PKG_CONFIG_PATH=/home/bragaus/.local/ublk-stack/lib/pkgconfig \
+  make -B preparar_cuda
+DURACAO_DO_FIO_EM_SEGUNDOS=1 make provar_vm
+```
+
+As provas exactas demonstraram o oitavo erro, a absolvição independente das
+filas, a ruína fatal e o vencimento no primeiro nanossegundo do limite. ASan e
+UBSan nada denunciaram; a RTX 3060 devolveu zero erros e zero octetos perdidos
+no memcheck. Na VM, `create` mostrou `INICIALIZANDO`, `status` mostrou
+`SERVINDO`, três trabalhos concorrentes de 4 KiB, 64 KiB e 1 MiB terminaram
+com CRC32C e `err=0`, e `destroy` mostrou `ENCERRADO` antes da restituição
+integral.
+
+**Limite conhecido:** a prova CUDA injecta a falha de evento e as provas
+portáteis injectam séries e instantes; não se matou o controlador GPU durante
+um bloco ublk real. A quarentena deliberada só é exercida quando já não há
+destruição segura, e não promette recuperar conteúdo. **Q.E.D.**

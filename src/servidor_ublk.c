@@ -33,6 +33,11 @@ struct estado_do_servidor_ublk {
     struct contadores_da_fila *contadores;
     struct incumbencia_da_fila_ublk *incumbencias;
     int quantidade_de_filas_preparadas;
+    pthread_mutex_t exclusao_da_publicacao;
+    pthread_cond_t mudanca_da_publicacao;
+    uint32_t filas_que_responderam;
+    int filas_liberadas;
+    int portao_da_publicacao_iniciado;
     struct reserva_de_buffers reserva_de_buffers;
     pthread_t fio_do_observatorio;
     atomic_int ordenar_termo_do_observatorio;
@@ -53,6 +58,29 @@ struct incumbencia_da_fila_ublk {
 static struct estado_do_servidor_ublk *servidor_em_exercicio;
 static pthread_mutex_t exclusao_do_governo = PTHREAD_MUTEX_INITIALIZER;
 static atomic_int termo_requerido;
+
+/*
+ * LEMMA DO PORTAO ANTERIOR
+ * Proposito: preparar a synchronização que separa prova e publicação.
+ * Pre-condições: servidor singular, zerado e ainda sem trabalhadores.
+ * Effeitos: inicia exclusão e condição; restitue a exclusão na falha parcial.
+ * Retorno: zero ou o erro negativo de pthread. Razão: nenhum fio improvisa.
+ */
+static int preparar_portao_da_publicacao(
+    struct estado_do_servidor_ublk *servidor)
+{
+    int resultado;
+
+    resultado = pthread_mutex_init(&servidor->exclusao_da_publicacao, 0);
+    if (resultado != 0) return -resultado;
+    resultado = pthread_cond_init(&servidor->mudanca_da_publicacao, 0);
+    if (resultado != 0) {
+        (void)pthread_mutex_destroy(&servidor->exclusao_da_publicacao);
+        return -resultado;
+    }
+    servidor->portao_da_publicacao_iniciado = 1;
+    return 0;
+}
 
 /*
  * LEMMA DA CONCESSAO FIXAVEL
@@ -633,6 +661,11 @@ int desmontar_servidor_ublk(struct estado_do_servidor_ublk *servidor)
         if (munlockall() != 0 && resultado == 0) resultado = -errno;
         servidor->memoria_fixada = 0;
     }
+    if (servidor->portao_da_publicacao_iniciado) {
+        (void)pthread_cond_destroy(&servidor->mudanca_da_publicacao);
+        (void)pthread_mutex_destroy(&servidor->exclusao_da_publicacao);
+        servidor->portao_da_publicacao_iniciado = 0;
+    }
     atomic_store_explicit(&termo_requerido, 0, memory_order_relaxed);
     return resultado;
 }
@@ -673,6 +706,11 @@ int preparar_servidor_ublk(struct estado_do_servidor_ublk *servidor,
         return resultado;
     }
     servidor->memoria_fixada = 1;
+    resultado = preparar_portao_da_publicacao(servidor);
+    if (resultado < 0) {
+        desmontar_servidor_ublk(servidor);
+        return resultado;
+    }
     servidor->incumbencias = calloc(
         (size_t)configuracao->quantidade_de_filas,
         sizeof(*servidor->incumbencias));

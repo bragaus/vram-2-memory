@@ -7,6 +7,7 @@
 struct contexto_da_prova_do_governo {
     atomic_int iniciou;
     atomic_int terminar;
+    struct governo_do_apparelho *governo;
 };
 
 /*
@@ -20,6 +21,10 @@ int servir_prova_do_governo(
     struct contexto_da_prova_do_governo *prova = contexto;
 
     assert(configuracao_do_apparelho_e_valida(configuracao));
+    assert(publicar_estado_operacional_do_apparelho(
+        prova->governo, ESTADO_DO_GOVERNO_PRONTO) == 0);
+    assert(publicar_estado_operacional_do_apparelho(
+        prova->governo, ESTADO_DO_GOVERNO_SERVINDO) == 0);
     atomic_store(&prova->iniciou, 1);
     while (!atomic_load(&prova->terminar)) { }
     return 0;
@@ -69,6 +74,7 @@ int main(void)
     assert(preparar_governo_do_apparelho(
         &governo, servir_prova_do_governo,
         terminar_prova_do_governo, &contexto) == 0);
+    contexto.governo = &governo;
     assert(contemplar_apparelho_governado(&governo, &estado, &resultado) == 0);
     assert(estado == ESTADO_DO_GOVERNO_ENCERRADO && resultado == 0);
     assert(crear_apparelho_governado(&governo, &configuracao) == 0);

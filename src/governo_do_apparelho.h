@@ -49,6 +49,16 @@ int crear_apparelho_governado(struct governo_do_apparelho *governo,
                               const struct configuracao_do_apparelho *figura);
 
 /*
+ * Proposito: publicar PRONTO ou SERVINDO quando o serviço os demonstra.
+ * Pre-condições: transição consecutiva e governo vivo.
+ * Effeitos: muda o estado sob exclusão. Retorno: zero, -EINVAL ou -EPERM.
+ * Razão: só o serviço conhece o termo do preparo e a aceitação do núcleo.
+ */
+int publicar_estado_operacional_do_apparelho(
+    struct governo_do_apparelho *governo,
+    enum estado_do_governo_do_apparelho estado);
+
+/*
  * Proposito: copiar estado e último resultado sob a exclusão do governo.
  * Pre-condições: três destinos vivos. Effeitos: publica retrato coherente.
  * Retorno: zero ou -EINVAL. Razão: status jámais observa transição partida.

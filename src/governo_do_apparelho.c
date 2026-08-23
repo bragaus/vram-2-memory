@@ -7,7 +7,7 @@
  * THEOREMA DO FIO PROPRIETARIO
  * Proposito: executar a faculdade de serviço e publicar seu termo.
  * Pre-condições: configuração copiada e estado inicializando.
- * Effeitos: transita por pronto e servindo; afinal encerra ou falha.
+ * Effeitos: executa o serviço; afinal encerra ou publica sua falha.
  * Retorno: o governo recebido. Razão: resultado nasce no único fio possuidor.
  */
 static void *servir_apparelho_governado(void *argumento)
@@ -15,10 +15,6 @@ static void *servir_apparelho_governado(void *argumento)
     struct governo_do_apparelho *governo = argumento;
     int resultado;
 
-    (void)pthread_mutex_lock(&governo->exclusao);
-    governo->estado = ESTADO_DO_GOVERNO_PRONTO;
-    governo->estado = ESTADO_DO_GOVERNO_SERVINDO;
-    (void)pthread_mutex_unlock(&governo->exclusao);
     resultado = governo->servir(&governo->configuracao, governo->contexto);
     (void)pthread_mutex_lock(&governo->exclusao);
     governo->resultado = resultado;
@@ -26,6 +22,33 @@ static void *servir_apparelho_governado(void *argumento)
                                       ESTADO_DO_GOVERNO_ENCERRADO;
     (void)pthread_mutex_unlock(&governo->exclusao);
     return governo;
+}
+
+/*
+ * THEOREMA DA PUBLICACAO OPERACIONAL
+ * Proposito: publicar os dois marcos que somente o serviço pode conhecer.
+ * Pre-condições: governo vivo; pronto segue inicializando, servindo segue pronto.
+ * Effeitos: muda o estado sob a exclusão. Retorno: zero ou erro de transição.
+ * Razão: o governo não pode fingir que filas ou núcleo já estão preparados.
+ */
+int publicar_estado_operacional_do_apparelho(
+    struct governo_do_apparelho *governo,
+    enum estado_do_governo_do_apparelho estado)
+{
+    enum estado_do_governo_do_apparelho esperado;
+
+    if (governo == 0 || (estado != ESTADO_DO_GOVERNO_PRONTO &&
+        estado != ESTADO_DO_GOVERNO_SERVINDO)) return -EINVAL;
+    esperado = estado == ESTADO_DO_GOVERNO_PRONTO ?
+        ESTADO_DO_GOVERNO_INICIALIZANDO : ESTADO_DO_GOVERNO_PRONTO;
+    (void)pthread_mutex_lock(&governo->exclusao);
+    if (governo->estado != esperado) {
+        (void)pthread_mutex_unlock(&governo->exclusao);
+        return -EPERM;
+    }
+    governo->estado = estado;
+    (void)pthread_mutex_unlock(&governo->exclusao);
+    return 0;
 }
 /*
  * PROPOSICAO DO GOVERNO VAZIO

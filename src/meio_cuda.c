@@ -464,6 +464,7 @@ int aquecer_fila_do_meio_cuda(void *contexto, int indice_da_fila,
 {
     struct meio_assincrono_cuda *figura = contexto;
     struct transportador_cuda *transportador;
+    CUresult consulta_do_evento;
     uint32_t quantidade;
 
     if (vincular_fila_do_meio_cuda(contexto, indice_da_fila) < 0 ||
@@ -475,6 +476,15 @@ int aquecer_fila_do_meio_cuda(void *contexto, int indice_da_fila,
     if (!escrever_meio_cuda(transportador, 0, memoria, quantidade) ||
         !ler_meio_cuda(transportador, 0, memoria, quantidade) ||
         !zerar_meio_cuda(transportador, 0, quantidade)) return -EIO;
+    if (cuEventRecord(transportador->evento_de_aquecimento,
+                      transportador->corrente) != CUDA_SUCCESS) return -EIO;
+    consulta_do_evento = cuEventQuery(transportador->evento_de_aquecimento);
+    if (consulta_do_evento != CUDA_SUCCESS &&
+        consulta_do_evento != CUDA_ERROR_NOT_READY) return -EIO;
+    if (cuEventSynchronize(transportador->evento_de_aquecimento) !=
+            CUDA_SUCCESS ||
+        cuEventQuery(transportador->evento_de_aquecimento) != CUDA_SUCCESS)
+        return -EIO;
     return 0;
 }
 

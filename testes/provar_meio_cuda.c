@@ -43,7 +43,8 @@ int provar_contrato_assincrono_cuda(void)
         operacoes->preparar(&contexto, &configuracao) < 0 ||
         operacoes->vincular_fila(contexto, 0) < 0) goto termo;
     memoria = reservar_memoria_intermediaria_cuda(4096);
-    if (memoria == 0) goto termo;
+    if (memoria == 0 ||
+        operacoes->aquecer_fila(contexto, 0, memoria, 4096) < 0) goto termo;
     memoria[0] = 29;
     if (operacoes->escrever(contexto, 0, 0, memoria, 1,
                             testemunhar_conclusao_cuda, &testemunho) < 0 ||

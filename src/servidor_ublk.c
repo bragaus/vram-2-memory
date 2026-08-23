@@ -4,6 +4,7 @@
 #include "meio_simulado.h"
 #include "monitor_do_observatorio.h"
 #include "observador_de_si.h"
+#include "parada_limitada_ublk.h"
 #include "plano_da_memoria.h"
 #include "reserva_de_buffers.h"
 #include <errno.h>
@@ -22,6 +23,8 @@
 #include <ublksrv.h>
 #include <ublksrv_utils.h>
 #include <unistd.h>
+
+#define PRAZO_DA_PARADA_EM_NANOSSEGUNDOS UINT64_C(2000000000)
 
 struct incumbencia_da_fila_ublk;
 /* O servidor reune a configuração, o meio e as duas faces do dispositivo. */
@@ -44,6 +47,8 @@ struct estado_do_servidor_ublk {
     atomic_int ordenar_termo_do_observatorio;
     atomic_int falha_terminal;
     atomic_int posses_em_quarentena;
+    atomic_int estado_da_parada;
+    int resultado_da_parada;
     int observatorio_iniciado;
     int empregar_cuda;
     int buffers_registrados;
@@ -61,6 +66,51 @@ struct incumbencia_da_fila_ublk {
 static struct estado_do_servidor_ublk *servidor_em_exercicio;
 static pthread_mutex_t exclusao_do_governo = PTHREAD_MUTEX_INITIALIZER;
 static atomic_int termo_requerido;
+
+/*
+ * LEMMA DA PARADA QUARENTENARIA
+ * Proposito: ordenar termo finito e conservar posses quando elle não chega.
+ * Pre-condições: servidor e controle vivos.
+ * Effeitos: submette STOP_DEV; no erro publica ruína e quarentena.
+ * Retorno: resultado da ordem limitada. Razão: limpeza não vence segurança.
+ */
+static int ordenar_parada_limitada_do_servidor(
+    struct estado_do_servidor_ublk *servidor)
+{
+    uint64_t inicio = ler_instante_monotonico();
+    int estado_esperado = 0;
+    int resultado;
+
+    if (atomic_compare_exchange_strong_explicit(
+            &servidor->estado_da_parada, &estado_esperado, 1,
+            memory_order_acq_rel, memory_order_acquire)) {
+        resultado = parar_dispositivo_ublk_com_limite(
+            servidor->controle, PRAZO_DA_PARADA_EM_NANOSSEGUNDOS);
+        servidor->resultado_da_parada = resultado;
+        atomic_store_explicit(&servidor->estado_da_parada, 2,
+                              memory_order_release);
+    } else {
+        while (atomic_load_explicit(&servidor->estado_da_parada,
+                                    memory_order_acquire) == 1) {
+            uint64_t instante_actual = ler_instante_monotonico();
+            if (inicio == 0 || instante_actual < inicio ||
+                instante_actual - inicio >=
+                    PRAZO_DA_PARADA_EM_NANOSSEGUNDOS) break;
+            (void)sched_yield();
+        }
+        resultado = atomic_load_explicit(&servidor->estado_da_parada,
+                                         memory_order_acquire) == 2 ?
+            servidor->resultado_da_parada : -ETIMEDOUT;
+    }
+
+    if (resultado < 0 && resultado != -ENODEV) {
+        atomic_store_explicit(&servidor->falha_terminal, 1,
+                              memory_order_relaxed);
+        atomic_store_explicit(&servidor->posses_em_quarentena, 1,
+                              memory_order_relaxed);
+    }
+    return resultado;
+}
 
 /*
  * LEMMA DO PORTAO ANTERIOR
@@ -451,7 +501,7 @@ responder:
         &incumbencia->contexto);
     if (fila_exterior == 0) {
         incumbencia->resultado = -ENODEV;
-        ublksrv_ctrl_stop_dev(incumbencia->servidor->controle);
+        (void)ordenar_parada_limitada_do_servidor(incumbencia->servidor);
         return argumento;
     }
     do {
@@ -471,7 +521,7 @@ responder:
         incumbencia->resultado = 0;
     } else if (incumbencia->resultado < 0) {
         /* Uma fila enferma ordena que suas irmãs também convirjam. */
-        ublksrv_ctrl_stop_dev(incumbencia->servidor->controle);
+        (void)ordenar_parada_limitada_do_servidor(incumbencia->servidor);
     }
     if (!atomic_load_explicit(&incumbencia->servidor->posses_em_quarentena,
                               memory_order_relaxed))
@@ -694,7 +744,7 @@ void ordenar_parada_do_servidor_ublk(int sinal_recebido)
     (void)sinal_recebido;
     if (servidor_em_exercicio != 0 &&
         servidor_em_exercicio->controle != 0) {
-        ublksrv_ctrl_stop_dev(servidor_em_exercicio->controle);
+        (void)ordenar_parada_limitada_do_servidor(servidor_em_exercicio);
     }
 }
 
@@ -709,7 +759,7 @@ int ordenar_termo_do_servidor_ublk(void)
     (void)pthread_mutex_lock(&exclusao_do_governo);
     if (servidor_em_exercicio != 0 &&
         servidor_em_exercicio->controle != 0) {
-        ublksrv_ctrl_stop_dev(servidor_em_exercicio->controle);
+        (void)ordenar_parada_limitada_do_servidor(servidor_em_exercicio);
     }
     (void)pthread_mutex_unlock(&exclusao_do_governo);
     return 0;
@@ -951,7 +1001,7 @@ int executar_servidor_com_meio(
     resultado = julgar_filas_e_publicar(
         &servidor, quantidade_iniciada, resultado);
     if (resultado == 0) resultado = iniciar_observatorio_ublk(&servidor);
-    if (resultado < 0) ublksrv_ctrl_stop_dev(servidor.controle);
+    if (resultado < 0) (void)ordenar_parada_limitada_do_servidor(&servidor);
     {
         int resultado_das_filas = recolher_filas_ublk(
             servidor.incumbencias, quantidade_iniciada);

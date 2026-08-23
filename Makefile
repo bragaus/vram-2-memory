@@ -149,7 +149,7 @@ provar_pressao:
 $(PROVA_CUDA): testes/provar_meio_cuda.c src/meio_cuda.c \
 		src/reserva_de_buffers.c src/plano_da_memoria.c | $(DIRECTORIO_DA_CONSTRUCAO)
 	$(COMPILADOR) $(AVISOS) -I$(DIRECTORIO_DO_CUDA)/include $^ -o $@ \
-		-lcuda
+		-DPROVAR_INJECCAO_CUDA -lcuda
 
 $(SERVIDOR): $(FONTES_DO_SERVIDOR) | $(DIRECTORIO_DA_CONSTRUCAO)
 	$(COMPILADOR) $(AVISOS) -D_GNU_SOURCE -I$(DIRECTORIO_DO_CUDA)/include \

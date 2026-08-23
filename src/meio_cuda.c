@@ -14,6 +14,11 @@ struct conclusao_cuda {
     uint64_t ordem;
     int erro;
     int pendente;
+#ifdef PROVAR_INJECCAO_CUDA
+    CUresult consulta_injectada;
+    int ha_consulta_injectada;
+    int fallar_proxima_submissao;
+#endif
 };
 
 /* O invólucro reúne a VRAM, seus transportadores e sentenças. */
@@ -479,6 +484,47 @@ static struct conclusao_cuda *achar_conclusao_cuda(
         (size_t)etiqueta];
 }
 
+#ifdef PROVAR_INJECCAO_CUDA
+/*
+ * LEMMA DA CONSULTA FINGIDA
+ * Proposito: fixar uma única resposta futura para a prova determinística.
+ * Pre-condições: etiqueta CUDA pendente e contexto de prova.
+ * Effeitos: substitue somente a próxima consulta do evento escolhido.
+ * Retorno: zero no aceite ou -EINVAL. Razão: fallar ao acaso nada demonstra.
+ */
+int injectar_consulta_do_evento_cuda(
+    void *contexto, int indice_da_fila, int etiqueta, CUresult resultado)
+{
+    struct conclusao_cuda *conclusao = achar_conclusao_cuda(
+        contexto, indice_da_fila, etiqueta);
+
+    if (conclusao == 0 || !conclusao->pendente ||
+        conclusao->ha_consulta_injectada) return -EINVAL;
+    conclusao->consulta_injectada = resultado;
+    conclusao->ha_consulta_injectada = 1;
+    return 0;
+}
+
+/*
+ * LEMMA DA SUBMISSAO FINGIDAMENTE RECUSADA
+ * Proposito: condemnar uma só submissão antes de tocar a corrente.
+ * Pre-condições: etiqueta CUDA ociosa e contexto de prova.
+ * Effeitos: arma recusa consumível. Retorno: zero ou -EINVAL.
+ * Razão: erro immediato deve prometer exactamente zero callbacks futuras.
+ */
+int injectar_erro_da_submissao_cuda(
+    void *contexto, int indice_da_fila, int etiqueta)
+{
+    struct conclusao_cuda *conclusao = achar_conclusao_cuda(
+        contexto, indice_da_fila, etiqueta);
+
+    if (conclusao == 0 || conclusao->pendente ||
+        conclusao->fallar_proxima_submissao) return -EINVAL;
+    conclusao->fallar_proxima_submissao = 1;
+    return 0;
+}
+#endif
+
 /*
  * LEMMA DA ORDEM REPRESENTAVEL
  * Proposito: reservar o próximo número sem confundir promessas vivas.
@@ -545,6 +591,12 @@ int submeter_leitura_ao_meio_cuda(
         !regiao_cuda_e_valida(transportador, deslocamento,
                               quantidade_de_bytes)) return -EINVAL;
     if (conclusao->pendente) return -EBUSY;
+#ifdef PROVAR_INJECCAO_CUDA
+    if (conclusao->fallar_proxima_submissao) {
+        conclusao->fallar_proxima_submissao = 0;
+        return -EIO;
+    }
+#endif
     if (preparar_ordem_da_promessa_cuda(transportador) < 0)
         return -EOVERFLOW;
     if (!escolher_contexto_cuda(transportador->meio) ||
@@ -579,6 +631,12 @@ int submeter_escripta_ao_meio_cuda(
         !regiao_cuda_e_valida(transportador, deslocamento,
                               quantidade_de_bytes)) return -EINVAL;
     if (conclusao->pendente) return -EBUSY;
+#ifdef PROVAR_INJECCAO_CUDA
+    if (conclusao->fallar_proxima_submissao) {
+        conclusao->fallar_proxima_submissao = 0;
+        return -EIO;
+    }
+#endif
     if (preparar_ordem_da_promessa_cuda(transportador) < 0)
         return -EOVERFLOW;
     if (!escolher_contexto_cuda(transportador->meio) ||
@@ -612,6 +670,12 @@ int submeter_zeragem_ao_meio_cuda(
         !regiao_cuda_e_valida(transportador, deslocamento,
                               quantidade_de_bytes)) return -EINVAL;
     if (conclusao->pendente) return -EBUSY;
+#ifdef PROVAR_INJECCAO_CUDA
+    if (conclusao->fallar_proxima_submissao) {
+        conclusao->fallar_proxima_submissao = 0;
+        return -EIO;
+    }
+#endif
     if (preparar_ordem_da_promessa_cuda(transportador) < 0)
         return -EOVERFLOW;
     if (!escolher_contexto_cuda(transportador->meio) ||
@@ -674,7 +738,13 @@ int colher_meio_cuda(void *contexto, int indice_da_fila, int orcamento)
         int erro;
 
         if (conclusao == 0) break;
-        consulta_do_evento = cuEventQuery(conclusao->evento);
+#ifdef PROVAR_INJECCAO_CUDA
+        if (conclusao->ha_consulta_injectada) {
+            consulta_do_evento = conclusao->consulta_injectada;
+            conclusao->ha_consulta_injectada = 0;
+        } else
+#endif
+            consulta_do_evento = cuEventQuery(conclusao->evento);
         if (consulta_do_evento == CUDA_ERROR_NOT_READY) break;
         concluir = conclusao->concluir;
         argumento = conclusao->argumento;

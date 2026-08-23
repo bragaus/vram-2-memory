@@ -47,6 +47,7 @@ int provar_contrato_assincrono_cuda(void)
     struct testemunho_da_conclusao_cuda testemunho = {0};
     struct incumbencia_da_conclusao_cuda primeira = {&testemunho, 1};
     struct incumbencia_da_conclusao_cuda segunda = {&testemunho, 0};
+    struct incumbencia_da_conclusao_cuda terceira = {&testemunho, 2};
     struct reserva_de_buffers reserva = {0};
     const struct operacoes_do_meio *operacoes = obter_operacoes_do_meio_cuda();
     unsigned char *memoria = 0;
@@ -80,6 +81,9 @@ int provar_contrato_assincrono_cuda(void)
                          testemunhar_conclusao_cuda, &segunda) < 0 ||
         operacoes->escrever(contexto, 1, 1, 0, memoria, 1,
                             testemunhar_conclusao_cuda, &primeira) != -EBUSY ||
+        injectar_consulta_do_evento_cuda(
+            contexto, 1, 1, CUDA_ERROR_NOT_READY) < 0 ||
+        operacoes->colher(contexto, 1, 2) != 0 ||
         testemunho.quantidade != 0) goto termo;
     while (testemunho.quantidade < 2 && tentativas < 1000000) {
         if (operacoes->colher(contexto, 1, 2) < 0) goto termo;
@@ -90,6 +94,21 @@ int provar_contrato_assincrono_cuda(void)
         operacoes->escrever(contexto, 1, 2, 0, memoria, 1,
                             testemunhar_conclusao_cuda, &primeira) >= 0 ||
         operacoes->colher(contexto, 1, 1) != 0) goto termo;
+    memoria = achar_buffer_reservado(&reserva, 1, 0, 4096);
+    if (injectar_erro_da_submissao_cuda(contexto, 1, 0) < 0 ||
+        operacoes->escrever(contexto, 1, 0, 0, memoria, 1,
+                            testemunhar_conclusao_cuda, &terceira) != -EIO ||
+        testemunho.quantidade != 2 ||
+        operacoes->escrever(contexto, 1, 0, 0, memoria, 1,
+                            testemunhar_conclusao_cuda, &terceira) < 0 ||
+        injectar_consulta_do_evento_cuda(
+            contexto, 1, 0, CUDA_ERROR_UNKNOWN) < 0 ||
+        operacoes->colher(contexto, 1, 1) != 1 ||
+        testemunho.quantidade != 3 || testemunho.erro != -EIO ||
+        testemunho.ordem[2] != 2 ||
+        operacoes->colher(contexto, 1, 1) != 0 ||
+        injectar_consulta_do_evento_cuda(
+            contexto, 1, 0, CUDA_SUCCESS) >= 0) goto termo;
     resultado = 1;
 
 termo:

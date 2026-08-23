@@ -99,6 +99,26 @@ int escrever_meio_cuda(struct transportador_cuda *transportador,
 int zerar_meio_cuda(struct transportador_cuda *transportador,
                     uint64_t deslocamento, uint32_t quantidade_de_bytes);
 
+#ifdef PROVAR_INJECCAO_CUDA
+/*
+ * Proposito: impor uma resposta á próxima consulta de uma etiqueta pendente.
+ * Pre-condições: binário de prova, contexto e identidade válidos.
+ * Effeitos: arma uma só injecção. Retorno: zero ou -EINVAL.
+ * Razão: o servidor de produção jámais conterá o artifício determinístico.
+ */
+int injectar_consulta_do_evento_cuda(
+    void *contexto, int indice_da_fila, int etiqueta, CUresult resultado);
+
+/*
+ * Proposito: impor erro á próxima submissão de uma etiqueta ociosa.
+ * Pre-condições: binário de prova, contexto e identidade válidos.
+ * Effeitos: arma uma só recusa. Retorno: zero ou -EINVAL.
+ * Razão: a prova contará zero callbacks depois do erro immediato.
+ */
+int injectar_erro_da_submissao_cuda(
+    void *contexto, int indice_da_fila, int etiqueta);
+#endif
+
 /*
  * Proposito: revelar a taboa assíncrona do reservatório CUDA.
  * Pre-condições: nenhuma; a taboa possue duração estática.

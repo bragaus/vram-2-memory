@@ -15,6 +15,7 @@ struct contexto_da_fila_ublk {
     int indice_da_fila;
     struct contadores_da_fila *contadores;
     uint64_t prazo_em_nanossegundos;
+    int resultado_assincrono;
 };
 
 /*
@@ -28,9 +29,9 @@ uint64_t ler_instante_monotonico(void);
 /*
  * Proposito: applicar uma operação ublk ao contracto commum do meio.
  * Pre-condições: taboa, contexto e região previamente cercados.
- * Effeitos: submette, colhe e traduz uma sentença ainda synchronamente.
- * Retorno: octetos transportados, zero na descarga ou erro negativo.
- * Razão: operações externas convergem numa sentença autoral verificável.
+ * Effeitos: submette e promette conclusão, sem colher a corrente.
+ * Retorno: zero na promessa, um no acto immediato ou erro sem promessa.
+ * Razão: a fila colherá o evento e concluirá pelo registro persistente.
  */
 int transferir_requisicao_ublk(struct contexto_da_fila_ublk *contexto,
                                uint8_t operacao, uint32_t etiqueta,

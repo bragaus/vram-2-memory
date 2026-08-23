@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <pthread.h>
+#include <sched.h>
 #include <signal.h>
 #include <stdatomic.h>
 #include <stdio.h>
@@ -342,6 +343,31 @@ static void responder_ao_portao_da_publicacao(
 }
 
 /*
+ * THEOREMA DA COLHEITA DA FILA
+ * Proposito: consultar eventos até sentenciar as transferências presentes.
+ * Pre-condições: fio proprietário, meio vinculado e fila exterior viva.
+ * Effeitos: executa callbacks na própria fila e cede CPU quando nada termina.
+ * Retorno: zero na drenagem ou primeiro erro do meio ou da entrega.
+ * Razão: nova espera ublk só começa depois de resolver os DMAs já recebidos.
+ */
+static int colher_transferencias_da_fila(
+    struct incumbencia_da_fila_ublk *incumbencia)
+{
+    struct contexto_da_fila_ublk *contexto = &incumbencia->contexto;
+
+    while (contar_requisicoes_transferindo(contexto->fila) > 0) {
+        int quantidade_colhida = contexto->operacoes_do_meio->colher(
+            contexto->contexto_do_meio, contexto->indice_da_fila,
+            (int)contexto->fila->profundidade);
+        if (quantidade_colhida < 0) return quantidade_colhida;
+        if (contexto->resultado_assincrono < 0)
+            return contexto->resultado_assincrono;
+        if (quantidade_colhida == 0) (void)sched_yield();
+    }
+    return contexto->resultado_assincrono;
+}
+
+/*
  * THEOREMA DO TRABALHADOR DA FILA
  * Proposito: servir uma fila exterior no seu único fio de execução.
  * Pre-condições: dispositivo e incumbência preparados antes do fio nascer.
@@ -393,6 +419,9 @@ responder:
     }
     do {
         incumbencia->resultado = ublksrv_process_io(fila_exterior);
+        if (incumbencia->resultado >= 0)
+            incumbencia->resultado = colher_transferencias_da_fila(
+                incumbencia);
     } while (incumbencia->resultado >= 0 &&
              !ublksrv_queue_is_done(fila_exterior));
     /* A parada ordenada poderá romper a espera com código exterior negativo. */

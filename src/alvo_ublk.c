@@ -8,24 +8,39 @@
 #include <stdint.h>
 #include <time.h>
 
-/* Conserva a sentença colhida durante a passagem ainda synchrona do alvo. */
-struct resultado_da_transferencia {
-    int foi_concluida;
-    int erro;
-};
-
 /*
- * Proposito: receber a sentença commum e torná-la resultado immediato.
- * Pre-condições: argumento aponta para testemunho vivo na pilha chamadora.
- * Effeitos: grava erro e marca conclusão. Retorno: nenhum.
- * Razão: a transição conserva a API antiga até o alvo tornar-se assíncrono.
+ * Proposito: entregar ao ublk a sentença colhida do evento da etiqueta.
+ * Pre-condições: registro conserva contexto, origem e identidade vivos.
+ * Effeitos: mede, conclue, rearma e registra a operação na própria fila.
+ * Retorno: nenhum. Razão: a callback marcha no fio que possue a fila.
  */
 static void concluir_transferencia_do_meio(void *argumento, int erro)
 {
-    struct resultado_da_transferencia *resultado = argumento;
+    struct registro_da_requisicao *registro = argumento;
+    struct contexto_da_fila_ublk *contexto =
+        registro->contexto_da_conclusao;
+    const struct ublksrv_queue *fila_exterior =
+        registro->origem_da_conclusao;
+    uint64_t instante_final = ler_instante_monotonico();
+    uint64_t latencia = instante_final >=
+        registro->instante_inicial_em_nanossegundos ?
+        instante_final - registro->instante_inicial_em_nanossegundos : 0;
+    int resultado = erro;
+    int resultado_da_entrega;
 
-    resultado->erro = erro;
-    resultado->foi_concluida = 1;
+    if (resultado == 0 &&
+        (registro->operacao == UBLK_IO_OP_READ ||
+         registro->operacao == UBLK_IO_OP_WRITE))
+        resultado = (int)registro->quantidade_de_bytes;
+    resultado_da_entrega = entregar_requisicao_ublk(
+        contexto, fila_exterior, registro->etiqueta, resultado,
+        instante_final);
+    registrar_operacao_observada(
+        contexto->contadores, registro->operacao != UBLK_IO_OP_READ,
+        registro->quantidade_de_bytes, latencia,
+        resultado_da_entrega < 0 ? resultado_da_entrega : resultado);
+    if (resultado_da_entrega < 0 && contexto->resultado_assincrono == 0)
+        contexto->resultado_assincrono = resultado_da_entrega;
 }
 
 /*
@@ -49,60 +64,58 @@ uint64_t ler_instante_monotonico(void)
 
 /*
  * THEOREMA DA PASSAGEM PELO CONTRACTO
- * Proposito: submetter, colher e traduzir uma operação do meio commum.
+ * Proposito: submetter uma operação ou reconhecer seu termo immediato.
  * Pre-condições: contexto íntegro e quantidade representável em int.
- * Effeitos: transporta ou zera e colhe uma única sentença da mesma fila.
- * Retorno: octetos, zero na descarga ou erro negativo.
- * Razão: a espera transitória conserva a conducta até o alvo assíncrono.
+ * Effeitos: arma promessa por etiqueta sem consultar sua conclusão.
+ * Retorno: zero na promessa, um no acto immediato ou erro sem promessa.
+ * Razão: somente a colheita da fila poderá completar DMA acceito.
  */
 static int transferir_pelo_contrato_do_meio(
     struct contexto_da_fila_ublk *contexto, uint8_t operacao, uint32_t etiqueta,
     uint64_t deslocamento, void *memoria, uint32_t quantidade_de_bytes)
 {
-    struct resultado_da_transferencia resultado = {0};
     const struct operacoes_do_meio *operacoes = contexto->operacoes_do_meio;
+    struct registro_da_requisicao *registro;
     int submissao;
     if (operacoes == 0 || contexto->contexto_do_meio == 0 ||
+        contexto->fila == 0 || etiqueta >= contexto->fila->profundidade ||
         quantidade_de_bytes > INT_MAX) return -EINVAL;
+    registro = &contexto->fila->registros[etiqueta];
     switch (operacao) {
     case UBLK_IO_OP_READ:
         submissao = operacoes->ler(
             contexto->contexto_do_meio, contexto->indice_da_fila, etiqueta,
             deslocamento, memoria, quantidade_de_bytes,
-            concluir_transferencia_do_meio, &resultado);
+            concluir_transferencia_do_meio, registro);
         break;
     case UBLK_IO_OP_WRITE:
         submissao = operacoes->escrever(
             contexto->contexto_do_meio, contexto->indice_da_fila, etiqueta,
             deslocamento, memoria, quantidade_de_bytes,
-            concluir_transferencia_do_meio, &resultado);
+            concluir_transferencia_do_meio, registro);
         break;
     case UBLK_IO_OP_DISCARD:
     case UBLK_IO_OP_WRITE_ZEROES:
         submissao = operacoes->zerar(
             contexto->contexto_do_meio, contexto->indice_da_fila, etiqueta,
             deslocamento, quantidade_de_bytes,
-            concluir_transferencia_do_meio, &resultado);
+            concluir_transferencia_do_meio, registro);
         break;
     case UBLK_IO_OP_FLUSH:
-        return 0;
+        return 1;
     default:
         return -EOPNOTSUPP;
     }
-    if (submissao < 0) return submissao;
-    if (operacoes->colher(contexto->contexto_do_meio,
-                          contexto->indice_da_fila, 1) != 1 ||
-        !resultado.foi_concluida) return -EIO;
-    return resultado.erro == 0 ? (int)quantidade_de_bytes : resultado.erro;
+    return submissao;
 }
 
 /*
  * THEOREMA DA TRANSFERENCIA UBLK
  * Proposito: traduzir a operação exterior para o meio da Casa.
  * Pre-condições: contexto e meio vivos; região arithmeticamente cercada.
- * Effeitos: lê, escreve ou reconhece descarga já síncrona.
- * Retorno: medida transportada, zero na descarga ou erro negativo.
- * Razão: somente leitura, escripta e descarga pertencem a este apparelho.
+ * Effeitos: submette DMA ou reconhece operação immediata.
+ * Retorno: zero na promessa, um no acto immediato ou erro sem promessa.
+ * Razão: toda operação material deixa a sentença á colheita proprietária.
  */
 int transferir_requisicao_ublk(struct contexto_da_fila_ublk *contexto,
                                uint8_t operacao, uint32_t etiqueta,
@@ -165,13 +178,10 @@ int tratar_requisicao_ublk(const struct ublksrv_queue *fila_exterior,
     const struct ublksrv_io_desc *descritor;
     struct registro_da_requisicao *registro;
     uint64_t deslocamento;
-    uint64_t instante_final;
-    uint64_t latencia;
     uint32_t quantidade;
     uint8_t operacao;
     void *memoria;
-    int resultado;
-    int resultado_da_entrega;
+    int submissao;
 
     if (fila_exterior == 0 || dados == 0 || dados->iod == 0) return -EINVAL;
     contexto = fila_exterior->private_data;
@@ -188,17 +198,12 @@ int tratar_requisicao_ublk(const struct ublksrv_queue *fila_exterior,
         contexto->fila, (uint32_t)dados->tag, deslocamento, quantidade,
         operacao, memoria, ler_instante_monotonico());
     if (registro == 0) return -EBUSY;
-    resultado = transferir_requisicao_ublk(
+    registro->contexto_da_conclusao = contexto;
+    registro->origem_da_conclusao = fila_exterior;
+    submissao = transferir_requisicao_ublk(
         contexto, operacao, (uint32_t)dados->tag, deslocamento, memoria,
         quantidade);
-    instante_final = ler_instante_monotonico();
-    latencia = instante_final >= registro->instante_inicial_em_nanossegundos ?
-        instante_final - registro->instante_inicial_em_nanossegundos : 0;
-    resultado_da_entrega = entregar_requisicao_ublk(
-        contexto, fila_exterior, (uint32_t)dados->tag, resultado,
-        instante_final);
-    registrar_operacao_observada(
-        contexto->contadores, operacao != UBLK_IO_OP_READ, quantidade,
-        latencia, resultado_da_entrega < 0 ? resultado_da_entrega : resultado);
-    return resultado_da_entrega;
+    if (submissao != 0)
+        concluir_transferencia_do_meio(registro, submissao < 0 ? submissao : 0);
+    return contexto->resultado_assincrono;
 }

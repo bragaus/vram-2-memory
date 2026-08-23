@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Uma fila CUDA conserva a sentença que aguarda colheita. */
+/* Uma etiqueta CUDA conserva a sentença que aguarda colheita. */
 struct conclusao_cuda {
     funcao_de_conclusao_do_meio concluir;
     void *argumento;
@@ -20,6 +20,7 @@ struct meio_assincrono_cuda {
     struct transportador_cuda *transportadores;
     struct conclusao_cuda *conclusoes;
     int quantidade_de_filas;
+    int profundidade_das_filas;
 };
 
 /*
@@ -306,7 +307,10 @@ int preparar_meio_assincrono_cuda(
 
     if (contexto == 0 || *contexto != 0 || configuracao == 0 ||
         configuracao->capacidade_em_bytes == 0 ||
-        configuracao->quantidade_de_filas <= 0) return -EINVAL;
+        configuracao->quantidade_de_filas <= 0 ||
+        configuracao->profundidade_das_filas <= 0) return -EINVAL;
+    if ((size_t)configuracao->quantidade_de_filas > SIZE_MAX /
+            (size_t)configuracao->profundidade_das_filas) return -EOVERFLOW;
     figura = calloc(1, sizeof(*figura));
     if (figura == 0) return -ENOMEM;
     if (!criar_meio_cuda(&figura->meio, configuracao->indice_da_gpu,
@@ -318,7 +322,9 @@ int preparar_meio_assincrono_cuda(
     figura->transportadores = calloc(
         quantidade_de_filas, sizeof(*figura->transportadores));
     figura->conclusoes = calloc(
-        quantidade_de_filas, sizeof(*figura->conclusoes));
+        quantidade_de_filas *
+            (size_t)configuracao->profundidade_das_filas,
+        sizeof(*figura->conclusoes));
     if (figura->transportadores == 0 || figura->conclusoes == 0) {
         free(figura->conclusoes);
         free(figura->transportadores);
@@ -327,6 +333,7 @@ int preparar_meio_assincrono_cuda(
         return -ENOMEM;
     }
     figura->quantidade_de_filas = configuracao->quantidade_de_filas;
+    figura->profundidade_das_filas = configuracao->profundidade_das_filas;
     *contexto = figura;
     return 0;
 }
@@ -426,23 +433,26 @@ int aquecer_fila_do_meio_cuda(void *contexto, int indice_da_fila,
 
 /*
  * LEMMA DA SENTENÇA CUDA NUMERADA
- * Proposito: achar a conclusão pertencente a uma fila válida.
- * Pre-condições: nenhuma; contexto e índice poderão ser estranhos.
+ * Proposito: achar a conclusão pertencente a uma etiqueta válida.
+ * Pre-condições: nenhuma; contexto, fila e etiqueta poderão ser estranhos.
  * Effeitos: nenhum. Retorno: sentença ou nulo fora do domínio.
  * Razão: uma só demonstração cerca a taboa paralella ás correntes.
  */
 static struct conclusao_cuda *achar_conclusao_cuda(
-    struct meio_assincrono_cuda *figura, int indice_da_fila)
+    struct meio_assincrono_cuda *figura, int indice_da_fila, int etiqueta)
 {
     if (figura == 0 || indice_da_fila < 0 ||
-        indice_da_fila >= figura->quantidade_de_filas) return 0;
-    return &figura->conclusoes[indice_da_fila];
+        indice_da_fila >= figura->quantidade_de_filas || etiqueta < 0 ||
+        etiqueta >= figura->profundidade_das_filas) return 0;
+    return &figura->conclusoes[
+        (size_t)indice_da_fila * (size_t)figura->profundidade_das_filas +
+        (size_t)etiqueta];
 }
 
 /*
  * THEOREMA DA LEITURA CUDA PROMETTIDA
  * Proposito: transportar por DMA e differir a sentença até a colheita.
- * Pre-condições: fila ociosa, destino fixado e região contida.
+ * Pre-condições: etiqueta ociosa, destino fixado e região contida.
  * Effeitos: preenche o destino e arma exactamente uma conclusão.
  * Retorno: zero quando acceita, ou erro negativo sem promessa ulterior.
  * Razão: a taboa já separa tempos ainda que a execução espere a corrente.
@@ -456,9 +466,8 @@ int submeter_leitura_ao_meio_cuda(
     struct transportador_cuda *transportador = achar_transportador_cuda(
         figura, indice_da_fila);
     struct conclusao_cuda *conclusao = achar_conclusao_cuda(
-        figura, indice_da_fila);
+        figura, indice_da_fila, etiqueta);
 
-    (void)etiqueta;
     if (conclusao == 0 || concluir == 0 || destino == 0 ||
         !regiao_cuda_e_valida(transportador, deslocamento,
                               quantidade_de_bytes)) return -EINVAL;
@@ -475,7 +484,7 @@ int submeter_leitura_ao_meio_cuda(
 /*
  * THEOREMA DA ESCRIPTA CUDA PROMETTIDA
  * Proposito: depositar por DMA e differir a sentença até a colheita.
- * Pre-condições: fila ociosa, origem fixada e região contida.
+ * Pre-condições: etiqueta ociosa, origem fixada e região contida.
  * Effeitos: altera a VRAM e arma exactamente uma conclusão.
  * Retorno: zero quando acceita, ou erro negativo sem promessa ulterior.
  * Razão: ambas as direcções submettem-se á mesma ordem temporal.
@@ -489,9 +498,8 @@ int submeter_escripta_ao_meio_cuda(
     struct transportador_cuda *transportador = achar_transportador_cuda(
         figura, indice_da_fila);
     struct conclusao_cuda *conclusao = achar_conclusao_cuda(
-        figura, indice_da_fila);
+        figura, indice_da_fila, etiqueta);
 
-    (void)etiqueta;
     if (conclusao == 0 || concluir == 0 || origem == 0 ||
         !regiao_cuda_e_valida(transportador, deslocamento,
                               quantidade_de_bytes)) return -EINVAL;
@@ -508,7 +516,7 @@ int submeter_escripta_ao_meio_cuda(
 /*
  * COROLLARIO DO ZERO CUDA PROMETTIDO
  * Proposito: apagar a VRAM e differir a sentença até a colheita.
- * Pre-condições: fila ociosa e região contida no reservatório.
+ * Pre-condições: etiqueta ociosa e região contida no reservatório.
  * Effeitos: reduz a região a zero e arma exactamente uma conclusão.
  * Retorno: zero quando acceita, ou erro negativo sem promessa ulterior.
  * Razão: descarte e zero explícito partilham uma só operação material.
@@ -522,9 +530,8 @@ int submeter_zeragem_ao_meio_cuda(
     struct transportador_cuda *transportador = achar_transportador_cuda(
         figura, indice_da_fila);
     struct conclusao_cuda *conclusao = achar_conclusao_cuda(
-        figura, indice_da_fila);
+        figura, indice_da_fila, etiqueta);
 
-    (void)etiqueta;
     if (conclusao == 0 || concluir == 0 ||
         !regiao_cuda_e_valida(transportador, deslocamento,
                               quantidade_de_bytes)) return -EINVAL;
@@ -540,32 +547,41 @@ int submeter_zeragem_ao_meio_cuda(
 
 /*
  * THEOREMA DA COLHEITA CUDA SINGULAR
- * Proposito: entregar a promessa pendente da fila exactamente uma vez.
+ * Proposito: entregar promessas pendentes da fila até o orçamento.
  * Pre-condições: orçamento positivo e fila pertencente ao contexto.
  * Effeitos: desarma a sentença antes de chamar o consulente.
- * Retorno: uma conclusão, zero na ausência ou erro negativo no domínio.
+ * Retorno: número de conclusões, zero na ausência ou erro no domínio.
  * Razão: a ordem permitte que a própria conclusão arme trabalho novo.
  */
 int colher_meio_cuda(void *contexto, int indice_da_fila, int orcamento)
 {
     struct meio_assincrono_cuda *figura = contexto;
-    struct conclusao_cuda *conclusao = achar_conclusao_cuda(
-        figura, indice_da_fila);
-    funcao_de_conclusao_do_meio concluir;
-    void *argumento;
-    int erro;
+    int etiqueta;
+    int quantidade_colhida = 0;
 
-    if (conclusao == 0 || orcamento <= 0) return -EINVAL;
-    if (!conclusao->pendente) return 0;
-    concluir = conclusao->concluir;
-    argumento = conclusao->argumento;
-    erro = conclusao->erro;
-    conclusao->concluir = 0;
-    conclusao->argumento = 0;
-    conclusao->erro = 0;
-    conclusao->pendente = 0;
-    concluir(argumento, erro);
-    return 1;
+    if (figura == 0 || indice_da_fila < 0 ||
+        indice_da_fila >= figura->quantidade_de_filas || orcamento <= 0)
+        return -EINVAL;
+    for (etiqueta = 0; etiqueta < figura->profundidade_das_filas &&
+         quantidade_colhida < orcamento; etiqueta++) {
+        struct conclusao_cuda *conclusao = achar_conclusao_cuda(
+            figura, indice_da_fila, etiqueta);
+        funcao_de_conclusao_do_meio concluir;
+        void *argumento;
+        int erro;
+
+        if (!conclusao->pendente) continue;
+        concluir = conclusao->concluir;
+        argumento = conclusao->argumento;
+        erro = conclusao->erro;
+        conclusao->concluir = 0;
+        conclusao->argumento = 0;
+        conclusao->erro = 0;
+        conclusao->pendente = 0;
+        concluir(argumento, erro);
+        quantidade_colhida++;
+    }
+    return quantidade_colhida;
 }
 
 /*

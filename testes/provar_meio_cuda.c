@@ -43,6 +43,7 @@ int provar_contrato_assincrono_cuda(void)
     configuracao.indice_da_gpu = 0;
     configuracao.capacidade_em_bytes = 4096;
     configuracao.quantidade_de_filas = 2;
+    configuracao.profundidade_das_filas = 2;
     if (operacoes == 0 ||
         operacoes->preparar(&contexto, &configuracao) < 0 ||
         criar_reserva_de_buffers(&reserva, 2, 1, 4096) < 0 ||

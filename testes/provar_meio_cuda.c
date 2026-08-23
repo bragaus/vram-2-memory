@@ -104,7 +104,7 @@ int provar_contrato_assincrono_cuda(void)
         injectar_consulta_do_evento_cuda(
             contexto, 1, 0, CUDA_ERROR_UNKNOWN) < 0 ||
         operacoes->colher(contexto, 1, 1) != 1 ||
-        testemunho.quantidade != 3 || testemunho.erro != -EIO ||
+        testemunho.quantidade != 3 || testemunho.erro != -ENODEV ||
         testemunho.ordem[2] != 2 ||
         operacoes->colher(contexto, 1, 1) != 0 ||
         injectar_consulta_do_evento_cuda(

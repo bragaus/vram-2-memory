@@ -748,7 +748,8 @@ int colher_meio_cuda(void *contexto, int indice_da_fila, int orcamento)
         if (consulta_do_evento == CUDA_ERROR_NOT_READY) break;
         concluir = conclusao->concluir;
         argumento = conclusao->argumento;
-        erro = consulta_do_evento == CUDA_SUCCESS ? conclusao->erro : -EIO;
+        erro = consulta_do_evento == CUDA_SUCCESS ?
+            conclusao->erro : -ENODEV;
         conclusao->concluir = 0;
         conclusao->argumento = 0;
         conclusao->erro = 0;

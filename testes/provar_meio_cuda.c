@@ -1,4 +1,5 @@
 #include "../src/meio_cuda.h"
+#include "../src/reserva_de_buffers.h"
 
 /* Conserva quantas sentenças CUDA chegaram e qual foi a derradeira. */
 struct testemunho_da_conclusao_cuda {
@@ -72,15 +73,20 @@ int main(void)
 {
     struct meio_cuda meio = {0};
     struct transportador_cuda transportador = {0};
+    struct reserva_de_buffers reserva = {0};
     unsigned char *origem = 0;
     unsigned char *destino = 0;
+    int memoria_registrada = 0;
     int resultado = 1;
 
     if (!criar_meio_cuda(&meio, 0, 8192) ||
         !criar_transportador_cuda(&transportador, &meio)) goto termo;
-    origem = reservar_memoria_intermediaria_cuda(4096);
-    destino = reservar_memoria_intermediaria_cuda(4096);
-    if (origem == 0 || destino == 0) goto termo;
+    if (criar_reserva_de_buffers(&reserva, 1, 2, 4096) < 0 ||
+        !registrar_memoria_intermediaria_cuda(
+            reserva.inicio, (size_t)reserva.quantidade_em_bytes)) goto termo;
+    memoria_registrada = 1;
+    origem = achar_buffer_reservado(&reserva, 0, 0, 4096);
+    destino = achar_buffer_reservado(&reserva, 0, 1, 4096);
     for (unsigned int indice = 0; indice < 4096; indice++) {
         origem[indice] = (unsigned char)(indice * 29U + 7U);
         destino[indice] = 0;
@@ -100,8 +106,9 @@ int main(void)
     resultado = 0;
 
 termo:
-    if (!destruir_memoria_intermediaria_cuda(destino)) resultado = 1;
-    if (!destruir_memoria_intermediaria_cuda(origem)) resultado = 1;
+    if (memoria_registrada &&
+        !desregistrar_memoria_intermediaria_cuda(reserva.inicio)) resultado = 1;
+    destruir_reserva_de_buffers(&reserva);
     if (!destruir_transportador_cuda(&transportador)) resultado = 1;
     if (!destruir_meio_cuda(&meio)) resultado = 1;
     if (resultado == 0 && !provar_contrato_assincrono_cuda()) resultado = 1;

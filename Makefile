@@ -146,7 +146,8 @@ provar_cuda: $(PROVA_CUDA)
 provar_pressao:
 	./testes/provar_pressao_e_swap.sh "$(DISPOSITIVO)"
 
-$(PROVA_CUDA): testes/provar_meio_cuda.c src/meio_cuda.c | $(DIRECTORIO_DA_CONSTRUCAO)
+$(PROVA_CUDA): testes/provar_meio_cuda.c src/meio_cuda.c \
+		src/reserva_de_buffers.c src/plano_da_memoria.c | $(DIRECTORIO_DA_CONSTRUCAO)
 	$(COMPILADOR) $(AVISOS) -I$(DIRECTORIO_DO_CUDA)/include $^ -o $@ \
 		-lcuda
 

@@ -20,6 +20,11 @@ int main(void)
 
     if (calcular_memoria_intermediaria(&configuracao, &quantidade) != 0 ||
         quantidade != 65536 ||
+        conferir_limite_da_memoria_intermediaria(
+            &configuracao, 65536, &quantidade) != 0 ||
+        conferir_limite_da_memoria_intermediaria(
+            &configuracao, 65535, &quantidade) != -ENOMEM ||
+        quantidade != 65536 ||
         calcular_memoria_intermediaria(0, &quantidade) != -EINVAL ||
         calcular_memoria_intermediaria(&configuracao, 0) != -EINVAL)
         return 1;

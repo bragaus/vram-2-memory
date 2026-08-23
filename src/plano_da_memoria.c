@@ -34,3 +34,25 @@ int calcular_memoria_intermediaria(
         configuracao->maior_operacao_em_bytes;
     return 0;
 }
+
+/*
+ * COROLLARIO DO LIMITE FIXAVEL
+ * Proposito: confrontar a reserva calculada com a concessão do processo.
+ * Pre-condições: destino válido e geometria calculável.
+ * Effeitos: publica a necessidade ainda que ella seja recusada.
+ * Retorno: zero, erro do cálculo ou -ENOMEM quando o limite não basta.
+ * Razão: o diagnóstico conserva ambas as grandezas para orientar correcção.
+ */
+int conferir_limite_da_memoria_intermediaria(
+    const struct configuracao_do_apparelho *configuracao,
+    uint64_t limite_em_bytes, uint64_t *necessaria_em_bytes)
+{
+    uint64_t necessidade;
+    int resultado;
+
+    if (necessaria_em_bytes == 0) return -EINVAL;
+    resultado = calcular_memoria_intermediaria(configuracao, &necessidade);
+    if (resultado < 0) return resultado;
+    *necessaria_em_bytes = necessidade;
+    return necessidade <= limite_em_bytes ? 0 : -ENOMEM;
+}

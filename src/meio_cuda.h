@@ -77,6 +77,23 @@ void *reservar_memoria_exterior_cuda(
 int destruir_memoria_intermediaria_cuda(void *memoria);
 
 /*
+ * Proposito: fixar uma região alinhada já adquirida pelo plano autoral.
+ * Pre-condições: contexto corrente, endereço vivo e quantidade positiva.
+ * Effeitos: chama cuMemHostRegister. Retorno: unidade ou zero.
+ * Razão: o registro separa a posse da RAM de sua aptidão para DMA.
+ */
+int registrar_memoria_intermediaria_cuda(void *memoria,
+                                         size_t quantidade_de_bytes);
+
+/*
+ * Proposito: retirar o registro CUDA antes de devolver a RAM autoral.
+ * Pre-condições: contexto corrente; endereço registrado ou nulo.
+ * Effeitos: chama cuMemHostUnregister. Retorno: unidade ou zero.
+ * Razão: a GPU perde accesso antes que a região torne ao alocador ordinário.
+ */
+int desregistrar_memoria_intermediaria_cuda(void *memoria);
+
+/*
  * Proposito: adaptar a restituição CUDA á assinatura de libublksrv.
  * Pre-condições: memória fixada ou nula; fila e etiqueta são exteriores.
  * Effeitos: restitue a região. Retorno: nenhum.

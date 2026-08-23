@@ -213,6 +213,35 @@ int destruir_memoria_intermediaria_cuda(void *memoria)
 }
 
 /*
+ * THEOREMA DO REGISTRO FIXO EXPLICITO
+ * Proposito: tornar apta para DMA uma região alinhada já possuída.
+ * Pre-condições: contexto corrente, endereço vivo e quantidade positiva.
+ * Effeitos: registra a extensão inteira na Driver API.
+ * Retorno: unidade no êxito ou zero na recusa.
+ * Razão: acquisição e fixação possuem termos inversos independentes.
+ */
+int registrar_memoria_intermediaria_cuda(void *memoria,
+                                         size_t quantidade_de_bytes)
+{
+    return memoria != 0 && quantidade_de_bytes != 0 &&
+        cuMemHostRegister(memoria, quantidade_de_bytes,
+                          CU_MEMHOSTREGISTER_PORTABLE) == CUDA_SUCCESS;
+}
+
+/*
+ * COROLLARIO DO TERMO DO REGISTRO
+ * Proposito: cessar o accesso CUDA á RAM antes da restituição autoral.
+ * Pre-condições: contexto corrente; endereço registrado ou nulo.
+ * Effeitos: chama cuMemHostUnregister. Retorno: unidade ou zero.
+ * Razão: endereço nulo já representa registro nenhum.
+ */
+int desregistrar_memoria_intermediaria_cuda(void *memoria)
+{
+    if (memoria == 0) return 1;
+    return cuMemHostUnregister(memoria) == CUDA_SUCCESS;
+}
+
+/*
  * COROLLARIO DA RESTITUIÇÃO EXTERIOR
  * Proposito: adaptar cuMemFreeHost á assinatura sem retorno da bibliotheca.
  * Pre-condições: memória fixada ou nula. Effeitos: restitue a região.

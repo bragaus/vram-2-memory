@@ -57,6 +57,15 @@ int rearmar_requisicao_na_fila(struct fila_de_requisicoes *fila,
                                uint32_t etiqueta);
 
 /*
+ * Proposito: contar etiquetas cuja transferência ainda aguarda sentença.
+ * Pre-condições: fila viva e pertencente ao fio consulente.
+ * Effeitos: nenhum. Retorno: quantidade transferindo, ou zero na fila vazia.
+ * Razão: a colheita decide se deve tornar a consultar eventos sem bloquear.
+ */
+uint32_t contar_requisicoes_transferindo(
+    const struct fila_de_requisicoes *fila);
+
+/*
  * Proposito: condemnar transferência cujo prazo conhecido se consumiu.
  * Pre-condições: relógio monotónico e prazo positivo em nanossegundos.
  * Effeitos: passa de transferindo a falhou e grava o resultado.

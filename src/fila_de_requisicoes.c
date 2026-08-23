@@ -73,6 +73,7 @@ struct registro_da_requisicao *iniciar_requisicao_na_fila(
     registro->instante_inicial_em_nanossegundos =
         instante_inicial_em_nanossegundos;
     registro->quantidade_de_bytes = quantidade_de_bytes;
+    registro->etiqueta = etiqueta;
     registro->resultado = 0;
     registro->operacao = operacao;
     registro->estado = ESTADO_DA_REQUISICAO_TRANSFERINDO;
@@ -122,7 +123,30 @@ int rearmar_requisicao_na_fila(struct fila_de_requisicoes *fila,
         return 0;
     }
     fila->registros[etiqueta].estado = ESTADO_DA_REQUISICAO_AGUARDANDO;
+    fila->registros[etiqueta].contexto_da_conclusao = 0;
+    fila->registros[etiqueta].origem_da_conclusao = 0;
     return 1;
+}
+
+/*
+ * LEMMA DAS TRANSFERENCIAS PRESENTES
+ * Proposito: contar as etiquetas que ainda pertencem ao meio assíncrono.
+ * Pre-condições: fila governada exclusivamente pelo fio consulente.
+ * Effeitos: nenhum. Retorno: cardinalidade transferindo, ou zero sem fila.
+ * Razão: eventos `NOT_READY` reclamam nova consulta, não nova busca exterior.
+ */
+uint32_t contar_requisicoes_transferindo(
+    const struct fila_de_requisicoes *fila)
+{
+    uint32_t etiqueta;
+    uint32_t quantidade = 0;
+
+    if (fila == 0 || fila->registros == 0) return 0;
+    for (etiqueta = 0; etiqueta < fila->profundidade; etiqueta++) {
+        if (fila->registros[etiqueta].estado ==
+            ESTADO_DA_REQUISICAO_TRANSFERINDO) quantidade++;
+    }
+    return quantidade;
 }
 
 /*

@@ -21,12 +21,14 @@ int main(void)
     registro = iniciar_requisicao_na_fila(
         &fila, 1, 4096, 16, 1, memoria, 100);
     if (registro == 0 || iniciar_requisicao_na_fila(
-            &fila, 1, 4096, 16, 1, memoria, 100) != 0) {
+            &fila, 1, 4096, 16, 1, memoria, 100) != 0 ||
+        contar_requisicoes_transferindo(&fila) != 1) {
         destruir_fila_de_requisicoes(&fila);
         return 1;
     }
     if (!concluir_requisicao_na_fila(&fila, 1, 16) ||
         concluir_requisicao_na_fila(&fila, 1, 16) ||
+        contar_requisicoes_transferindo(&fila) != 0 ||
         !rearmar_requisicao_na_fila(&fila, 1) ||
         rearmar_requisicao_na_fila(&fila, 1)) {
         destruir_fila_de_requisicoes(&fila);

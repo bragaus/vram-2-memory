@@ -32,9 +32,12 @@ enum estado_da_requisicao {
 struct registro_da_requisicao {
     enum estado_da_requisicao estado;
     void *memoria_intermediaria;
+    void *contexto_da_conclusao;
+    const void *origem_da_conclusao;
     uint64_t deslocamento;
     uint64_t instante_inicial_em_nanossegundos;
     uint32_t quantidade_de_bytes;
+    uint32_t etiqueta;
     int resultado;
     uint8_t operacao;
 };

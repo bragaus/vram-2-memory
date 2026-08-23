@@ -10,6 +10,7 @@
 struct conclusao_cuda {
     funcao_de_conclusao_do_meio concluir;
     void *argumento;
+    CUevent evento;
     int erro;
     int pendente;
 };
@@ -19,6 +20,7 @@ struct meio_assincrono_cuda {
     struct meio_cuda meio;
     struct transportador_cuda *transportadores;
     struct conclusao_cuda *conclusoes;
+    size_t quantidade_de_eventos_criados;
     int quantidade_de_filas;
     int profundidade_das_filas;
 };
@@ -303,6 +305,7 @@ int preparar_meio_assincrono_cuda(
     void **contexto, const struct configuracao_do_apparelho *configuracao)
 {
     struct meio_assincrono_cuda *figura;
+    size_t quantidade_de_conclusoes;
     size_t quantidade_de_filas;
 
     if (contexto == 0 || *contexto != 0 || configuracao == 0 ||
@@ -319,18 +322,37 @@ int preparar_meio_assincrono_cuda(
         return -ENOMEM;
     }
     quantidade_de_filas = (size_t)configuracao->quantidade_de_filas;
+    quantidade_de_conclusoes = quantidade_de_filas *
+        (size_t)configuracao->profundidade_das_filas;
     figura->transportadores = calloc(
         quantidade_de_filas, sizeof(*figura->transportadores));
     figura->conclusoes = calloc(
-        quantidade_de_filas *
-            (size_t)configuracao->profundidade_das_filas,
-        sizeof(*figura->conclusoes));
+        quantidade_de_conclusoes, sizeof(*figura->conclusoes));
     if (figura->transportadores == 0 || figura->conclusoes == 0) {
         free(figura->conclusoes);
         free(figura->transportadores);
         destruir_meio_cuda(&figura->meio);
         free(figura);
         return -ENOMEM;
+    }
+    while (figura->quantidade_de_eventos_criados <
+           quantidade_de_conclusoes) {
+        struct conclusao_cuda *conclusao = &figura->conclusoes[
+            figura->quantidade_de_eventos_criados];
+        if (cuEventCreate(&conclusao->evento, CU_EVENT_DISABLE_TIMING) !=
+            CUDA_SUCCESS) {
+            while (figura->quantidade_de_eventos_criados > 0) {
+                figura->quantidade_de_eventos_criados--;
+                (void)cuEventDestroy(figura->conclusoes[
+                    figura->quantidade_de_eventos_criados].evento);
+            }
+            free(figura->conclusoes);
+            free(figura->transportadores);
+            destruir_meio_cuda(&figura->meio);
+            free(figura);
+            return -ENOMEM;
+        }
+        figura->quantidade_de_eventos_criados++;
     }
     figura->quantidade_de_filas = configuracao->quantidade_de_filas;
     figura->profundidade_das_filas = configuracao->profundidade_das_filas;
@@ -354,6 +376,13 @@ void destruir_meio_assincrono_cuda(void *contexto)
     if (figura == 0) return;
     for (indice = 0; indice < figura->quantidade_de_filas; ++indice)
         destruir_transportador_cuda(&figura->transportadores[indice]);
+    if (escolher_contexto_cuda(&figura->meio)) {
+        while (figura->quantidade_de_eventos_criados > 0) {
+            figura->quantidade_de_eventos_criados--;
+            (void)cuEventDestroy(figura->conclusoes[
+                figura->quantidade_de_eventos_criados].evento);
+        }
+    }
     destruir_meio_cuda(&figura->meio);
     free(figura->conclusoes);
     free(figura->transportadores);

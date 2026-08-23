@@ -39,6 +39,19 @@ int terminar_prova_do_governo(void *contexto)
 }
 
 /*
+ * Proposito: representar serviço cuja preparação terminou em ruína.
+ * Pre-condições: configuração válida. Effeitos: nenhum.
+ * Retorno: -EIO. Razão: a prova deve conservar FALHOU mesmo depois do join.
+ */
+int falhar_prova_do_governo(
+    const struct configuracao_do_apparelho *configuracao, void *contexto)
+{
+    (void)configuracao;
+    (void)contexto;
+    return -EIO;
+}
+
+/*
  * Proposito: provar create, status, exclusividade, destroy e restituição.
  * Pre-condições: pthread disponível. Effeitos: nasce e reúne um fio fingido.
  * Retorno: zero no êxito. Razão: as ordens são provadas sem meio exterior.
@@ -67,6 +80,20 @@ int main(void)
     assert(destruir_apparelho_governado(&governo) == 0);
     assert(contemplar_apparelho_governado(&governo, &estado, &resultado) == 0);
     assert(estado == ESTADO_DO_GOVERNO_ENCERRADO && resultado == 0);
+    assert(encerrar_governo_do_apparelho(&governo) == 0);
+    assert(preparar_governo_do_apparelho(
+        &governo, falhar_prova_do_governo,
+        terminar_prova_do_governo, &contexto) == 0);
+    assert(crear_apparelho_governado(&governo, &configuracao) == 0);
+    do {
+        assert(contemplar_apparelho_governado(
+            &governo, &estado, &resultado) == 0);
+    } while (estado != ESTADO_DO_GOVERNO_FALHOU);
+    assert(resultado == -EIO);
+    assert(destruir_apparelho_governado(&governo) == -EIO);
+    assert(contemplar_apparelho_governado(
+        &governo, &estado, &resultado) == 0);
+    assert(estado == ESTADO_DO_GOVERNO_FALHOU && resultado == -EIO);
     assert(encerrar_governo_do_apparelho(&governo) == 0);
     return 0;
 }

@@ -125,6 +125,8 @@ int destruir_apparelho_governado(struct governo_do_apparelho *governo)
     (void)pthread_mutex_lock(&governo->exclusao);
     governo->fio_nascido = 0;
     resultado = governo->resultado;
+    governo->estado = resultado < 0 && resultado != -ECANCELED ?
+        ESTADO_DO_GOVERNO_FALHOU : ESTADO_DO_GOVERNO_ENCERRADO;
     (void)pthread_mutex_unlock(&governo->exclusao);
     return resultado == -ECANCELED ? 0 : resultado;
 }

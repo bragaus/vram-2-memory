@@ -109,9 +109,9 @@ static int escolher_contexto_cuda(const struct meio_cuda *meio)
 
 /*
  * THEOREMA DA CORRENTE EXCLUSIVA
- * Proposito: preparar uma corrente não bloqueante para uma só fila.
+ * Proposito: preparar corrente e evento de aquecimento para uma só fila.
  * Pre-condições: transportador vazio e meio vivo.
- * Effeitos: assenta o contexto e adquire CUstream.
+ * Effeitos: assenta o contexto e adquire CUstream e CUevent.
  * Retorno: unidade no êxito ou zero sem estado parcial.
  * Razão: a corrente ordinária introduziria dependências entre filas irmãs.
  */
@@ -126,6 +126,11 @@ int criar_transportador_cuda(struct transportador_cuda *transportador,
     }
     if (!escolher_contexto_cuda(meio) ||
         cuStreamCreate(&corrente, CU_STREAM_NON_BLOCKING) != CUDA_SUCCESS) {
+        return 0;
+    }
+    if (cuEventCreate(&transportador->evento_de_aquecimento,
+                      CU_EVENT_DISABLE_TIMING) != CUDA_SUCCESS) {
+        cuStreamDestroy(corrente);
         return 0;
     }
     transportador->meio = meio;
@@ -144,21 +149,36 @@ int criar_transportador_cuda(struct transportador_cuda *transportador,
 int destruir_transportador_cuda(struct transportador_cuda *transportador)
 {
     CUresult resultado_da_synchronizacao;
+    CUresult resultado_do_evento = CUDA_SUCCESS;
     CUresult resultado_da_destruicao;
 
-    if (transportador == 0 || transportador->corrente == 0) {
+    if (transportador == 0 ||
+        (transportador->corrente == 0 &&
+         transportador->evento_de_aquecimento == 0)) {
         return 1;
     }
     if (!escolher_contexto_cuda(transportador->meio)) {
         return 0;
     }
-    resultado_da_synchronizacao = cuStreamSynchronize(transportador->corrente);
-    resultado_da_destruicao = cuStreamDestroy(transportador->corrente);
+    resultado_da_synchronizacao = transportador->corrente == 0 ?
+        CUDA_SUCCESS : cuStreamSynchronize(transportador->corrente);
+    if (transportador->evento_de_aquecimento != 0) {
+        resultado_do_evento =
+            cuEventDestroy(transportador->evento_de_aquecimento);
+        if (resultado_do_evento == CUDA_SUCCESS)
+            transportador->evento_de_aquecimento = 0;
+    }
+    resultado_da_destruicao = transportador->corrente == 0 ?
+        CUDA_SUCCESS : cuStreamDestroy(transportador->corrente);
     if (resultado_da_destruicao == CUDA_SUCCESS) {
         transportador->corrente = 0;
+    }
+    if (transportador->corrente == 0 &&
+        transportador->evento_de_aquecimento == 0) {
         transportador->meio = 0;
     }
     return resultado_da_synchronizacao == CUDA_SUCCESS &&
+           resultado_do_evento == CUDA_SUCCESS &&
            resultado_da_destruicao == CUDA_SUCCESS;
 }
 

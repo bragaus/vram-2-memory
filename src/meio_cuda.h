@@ -16,6 +16,7 @@ struct meio_cuda {
 struct transportador_cuda {
     struct meio_cuda *meio;
     CUstream corrente;
+    CUevent evento_de_aquecimento;
 };
 /*
  * Proposito: escolher a GPU e reservar toda a VRAM antes da publicação.
@@ -35,9 +36,9 @@ int criar_meio_cuda(struct meio_cuda *meio, int indice_da_gpu,
 int destruir_meio_cuda(struct meio_cuda *meio);
 
 /*
- * Proposito: crear corrente não bloqueante exclusiva para uma fila.
+ * Proposito: crear corrente e evento de aquecimento para uma fila.
  * Pre-condições: meio vivo e transportador vazio.
- * Effeitos: adquire CUstream. Retorno: unidade ou zero.
+ * Effeitos: adquire CUstream e CUevent. Retorno: unidade ou zero.
  * Razão: filas independentes não hão de serializar na corrente ordinária.
  */
 int criar_transportador_cuda(struct transportador_cuda *transportador,

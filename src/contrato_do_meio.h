@@ -29,15 +29,16 @@ struct operacoes_do_meio {
     int (*aquecer_fila)(void *contexto, int indice_da_fila,
                         void *memoria, size_t quantidade_de_bytes);
     void (*destruir)(void *contexto);
-    int (*ler)(void *contexto, int indice_da_fila, uint64_t deslocamento,
-               void *destino, uint32_t quantidade_de_bytes,
+    int (*ler)(void *contexto, int indice_da_fila, int etiqueta,
+               uint64_t deslocamento, void *destino,
+               uint32_t quantidade_de_bytes,
                funcao_de_conclusao_do_meio concluir, void *argumento);
-    int (*escrever)(void *contexto, int indice_da_fila,
+    int (*escrever)(void *contexto, int indice_da_fila, int etiqueta,
                     uint64_t deslocamento, const void *origem,
                     uint32_t quantidade_de_bytes,
                     funcao_de_conclusao_do_meio concluir, void *argumento);
-    int (*zerar)(void *contexto, int indice_da_fila, uint64_t deslocamento,
-                 uint32_t quantidade_de_bytes,
+    int (*zerar)(void *contexto, int indice_da_fila, int etiqueta,
+                 uint64_t deslocamento, uint32_t quantidade_de_bytes,
                  funcao_de_conclusao_do_meio concluir, void *argumento);
     int (*colher)(void *contexto, int indice_da_fila, int orcamento);
 };

@@ -56,7 +56,7 @@ uint64_t ler_instante_monotonico(void)
  * Razão: a espera transitória conserva a conducta até o alvo assíncrono.
  */
 static int transferir_pelo_contrato_do_meio(
-    struct contexto_da_fila_ublk *contexto, uint8_t operacao,
+    struct contexto_da_fila_ublk *contexto, uint8_t operacao, uint32_t etiqueta,
     uint64_t deslocamento, void *memoria, uint32_t quantidade_de_bytes)
 {
     struct resultado_da_transferencia resultado = {0};
@@ -67,20 +67,20 @@ static int transferir_pelo_contrato_do_meio(
     switch (operacao) {
     case UBLK_IO_OP_READ:
         submissao = operacoes->ler(
-            contexto->contexto_do_meio, contexto->indice_da_fila,
+            contexto->contexto_do_meio, contexto->indice_da_fila, etiqueta,
             deslocamento, memoria, quantidade_de_bytes,
             concluir_transferencia_do_meio, &resultado);
         break;
     case UBLK_IO_OP_WRITE:
         submissao = operacoes->escrever(
-            contexto->contexto_do_meio, contexto->indice_da_fila,
+            contexto->contexto_do_meio, contexto->indice_da_fila, etiqueta,
             deslocamento, memoria, quantidade_de_bytes,
             concluir_transferencia_do_meio, &resultado);
         break;
     case UBLK_IO_OP_DISCARD:
     case UBLK_IO_OP_WRITE_ZEROES:
         submissao = operacoes->zerar(
-            contexto->contexto_do_meio, contexto->indice_da_fila,
+            contexto->contexto_do_meio, contexto->indice_da_fila, etiqueta,
             deslocamento, quantidade_de_bytes,
             concluir_transferencia_do_meio, &resultado);
         break;
@@ -105,14 +105,16 @@ static int transferir_pelo_contrato_do_meio(
  * Razão: somente leitura, escripta e descarga pertencem a este apparelho.
  */
 int transferir_requisicao_ublk(struct contexto_da_fila_ublk *contexto,
-                               uint8_t operacao, uint64_t deslocamento,
-                               void *memoria, uint32_t quantidade_de_bytes)
+                               uint8_t operacao, uint32_t etiqueta,
+                               uint64_t deslocamento, void *memoria,
+                               uint32_t quantidade_de_bytes)
 {
     if (contexto == 0 || quantidade_de_bytes > INT_MAX ||
         contexto->operacoes_do_meio == 0 ||
         contexto->contexto_do_meio == 0) return -EINVAL;
     return transferir_pelo_contrato_do_meio(
-        contexto, operacao, deslocamento, memoria, quantidade_de_bytes);
+        contexto, operacao, etiqueta, deslocamento, memoria,
+        quantidade_de_bytes);
 }
 
 /*
@@ -187,7 +189,8 @@ int tratar_requisicao_ublk(const struct ublksrv_queue *fila_exterior,
         operacao, memoria, ler_instante_monotonico());
     if (registro == 0) return -EBUSY;
     resultado = transferir_requisicao_ublk(
-        contexto, operacao, deslocamento, memoria, quantidade);
+        contexto, operacao, (uint32_t)dados->tag, deslocamento, memoria,
+        quantidade);
     instante_final = ler_instante_monotonico();
     latencia = instante_final >= registro->instante_inicial_em_nanossegundos ?
         instante_final - registro->instante_inicial_em_nanossegundos : 0;

@@ -448,9 +448,9 @@ static struct conclusao_cuda *achar_conclusao_cuda(
  * Razão: a taboa já separa tempos ainda que a execução espere a corrente.
  */
 int submeter_leitura_ao_meio_cuda(
-    void *contexto, int indice_da_fila, uint64_t deslocamento, void *destino,
-    uint32_t quantidade_de_bytes, funcao_de_conclusao_do_meio concluir,
-    void *argumento)
+    void *contexto, int indice_da_fila, int etiqueta, uint64_t deslocamento,
+    void *destino, uint32_t quantidade_de_bytes,
+    funcao_de_conclusao_do_meio concluir, void *argumento)
 {
     struct meio_assincrono_cuda *figura = contexto;
     struct transportador_cuda *transportador = achar_transportador_cuda(
@@ -458,6 +458,7 @@ int submeter_leitura_ao_meio_cuda(
     struct conclusao_cuda *conclusao = achar_conclusao_cuda(
         figura, indice_da_fila);
 
+    (void)etiqueta;
     if (conclusao == 0 || concluir == 0 || destino == 0 ||
         !regiao_cuda_e_valida(transportador, deslocamento,
                               quantidade_de_bytes)) return -EINVAL;
@@ -480,7 +481,7 @@ int submeter_leitura_ao_meio_cuda(
  * Razão: ambas as direcções submettem-se á mesma ordem temporal.
  */
 int submeter_escripta_ao_meio_cuda(
-    void *contexto, int indice_da_fila, uint64_t deslocamento,
+    void *contexto, int indice_da_fila, int etiqueta, uint64_t deslocamento,
     const void *origem, uint32_t quantidade_de_bytes,
     funcao_de_conclusao_do_meio concluir, void *argumento)
 {
@@ -490,6 +491,7 @@ int submeter_escripta_ao_meio_cuda(
     struct conclusao_cuda *conclusao = achar_conclusao_cuda(
         figura, indice_da_fila);
 
+    (void)etiqueta;
     if (conclusao == 0 || concluir == 0 || origem == 0 ||
         !regiao_cuda_e_valida(transportador, deslocamento,
                               quantidade_de_bytes)) return -EINVAL;
@@ -512,7 +514,7 @@ int submeter_escripta_ao_meio_cuda(
  * Razão: descarte e zero explícito partilham uma só operação material.
  */
 int submeter_zeragem_ao_meio_cuda(
-    void *contexto, int indice_da_fila, uint64_t deslocamento,
+    void *contexto, int indice_da_fila, int etiqueta, uint64_t deslocamento,
     uint32_t quantidade_de_bytes, funcao_de_conclusao_do_meio concluir,
     void *argumento)
 {
@@ -522,6 +524,7 @@ int submeter_zeragem_ao_meio_cuda(
     struct conclusao_cuda *conclusao = achar_conclusao_cuda(
         figura, indice_da_fila);
 
+    (void)etiqueta;
     if (conclusao == 0 || concluir == 0 ||
         !regiao_cuda_e_valida(transportador, deslocamento,
                               quantidade_de_bytes)) return -EINVAL;

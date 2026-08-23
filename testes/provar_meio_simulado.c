@@ -42,16 +42,16 @@ int provar_conclusao_assincrona_do_meio(void)
     configuracao.quantidade_de_filas = 1;
     if (operacoes == 0 || operacoes->preparar(&contexto, &configuracao) < 0)
         return 0;
-    if (operacoes->escrever(contexto, 0, 0, &octeto, 1,
+    if (operacoes->escrever(contexto, 0, 0, 0, &octeto, 1,
                             testemunhar_conclusao_do_meio, &testemunho) < 0 ||
         testemunho.quantidade != 0 ||
-        operacoes->zerar(contexto, 0, 0, 1,
+        operacoes->zerar(contexto, 0, 0, 0, 1,
                          testemunhar_conclusao_do_meio, &testemunho) !=
             -EBUSY ||
         operacoes->colher(contexto, 0, 1) != 1 ||
         testemunho.quantidade != 1 || testemunho.erro != 0 ||
         operacoes->colher(contexto, 0, 1) != 0 ||
-        operacoes->ler(contexto, 0, 8, &octeto, 1,
+        operacoes->ler(contexto, 0, 0, 8, &octeto, 1,
                        testemunhar_conclusao_do_meio, &testemunho) >= 0 ||
         testemunho.quantidade != 1) {
         operacoes->destruir(contexto);

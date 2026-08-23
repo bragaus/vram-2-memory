@@ -33,8 +33,9 @@ uint64_t ler_instante_monotonico(void);
  * Razão: operações externas convergem numa sentença autoral verificável.
  */
 int transferir_requisicao_ublk(struct contexto_da_fila_ublk *contexto,
-                               uint8_t operacao, uint64_t deslocamento,
-                               void *memoria, uint32_t quantidade_de_bytes);
+                               uint8_t operacao, uint32_t etiqueta,
+                               uint64_t deslocamento, void *memoria,
+                               uint32_t quantidade_de_bytes);
 
 /*
  * Proposito: confrontar prazo, entregar resultado e restituir etiqueta.

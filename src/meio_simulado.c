@@ -259,14 +259,15 @@ static struct conclusao_simulada *achar_conclusao_simulada(
  * Razão: o simulador imita a separação temporal do futuro DMA.
  */
 int submeter_leitura_ao_meio_simulado(
-    void *contexto, int indice_da_fila, uint64_t deslocamento, void *destino,
-    uint32_t quantidade_de_bytes, funcao_de_conclusao_do_meio concluir,
-    void *argumento)
+    void *contexto, int indice_da_fila, int etiqueta, uint64_t deslocamento,
+    void *destino, uint32_t quantidade_de_bytes,
+    funcao_de_conclusao_do_meio concluir, void *argumento)
 {
     struct meio_assincrono_simulado *figura = contexto;
     struct conclusao_simulada *conclusao = achar_conclusao_simulada(
         figura, indice_da_fila);
 
+    (void)etiqueta;
     if (conclusao == 0 || concluir == 0 || destino == 0 ||
         !intervallo_do_meio_e_valido(
             &figura->meio, deslocamento, quantidade_de_bytes)) return -EINVAL;
@@ -289,7 +290,7 @@ int submeter_leitura_ao_meio_simulado(
  * Razão: a mesma ordem temporal governa as duas direcções do transporte.
  */
 int submeter_escripta_ao_meio_simulado(
-    void *contexto, int indice_da_fila, uint64_t deslocamento,
+    void *contexto, int indice_da_fila, int etiqueta, uint64_t deslocamento,
     const void *origem, uint32_t quantidade_de_bytes,
     funcao_de_conclusao_do_meio concluir, void *argumento)
 {
@@ -297,6 +298,7 @@ int submeter_escripta_ao_meio_simulado(
     struct conclusao_simulada *conclusao = achar_conclusao_simulada(
         figura, indice_da_fila);
 
+    (void)etiqueta;
     if (conclusao == 0 || concluir == 0 || origem == 0 ||
         !intervallo_do_meio_e_valido(
             &figura->meio, deslocamento, quantidade_de_bytes)) return -EINVAL;
@@ -319,7 +321,7 @@ int submeter_escripta_ao_meio_simulado(
  * Razão: descarte e zero explícito partilham uma só operação material.
  */
 int submeter_zeragem_ao_meio_simulado(
-    void *contexto, int indice_da_fila, uint64_t deslocamento,
+    void *contexto, int indice_da_fila, int etiqueta, uint64_t deslocamento,
     uint32_t quantidade_de_bytes, funcao_de_conclusao_do_meio concluir,
     void *argumento)
 {
@@ -327,6 +329,7 @@ int submeter_zeragem_ao_meio_simulado(
     struct conclusao_simulada *conclusao = achar_conclusao_simulada(
         figura, indice_da_fila);
 
+    (void)etiqueta;
     if (conclusao == 0 || concluir == 0 ||
         !intervallo_do_meio_e_valido(
             &figura->meio, deslocamento, quantidade_de_bytes)) return -EINVAL;

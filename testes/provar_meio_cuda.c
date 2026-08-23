@@ -56,7 +56,7 @@ int provar_contrato_assincrono_cuda(void)
                 contexto, indice, memoria, 4096) < 0) goto termo;
     }
     memoria[0] = 29;
-    if (operacoes->escrever(contexto, 1, 0, memoria, 1,
+    if (operacoes->escrever(contexto, 1, 0, 0, memoria, 1,
                             testemunhar_conclusao_cuda, &testemunho) < 0 ||
         testemunho.quantidade != 0 ||
         operacoes->colher(contexto, 1, 1) != 1 ||

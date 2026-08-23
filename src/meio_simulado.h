@@ -66,7 +66,7 @@ const struct operacoes_do_meio *obter_operacoes_do_meio_simulado(void);
 /*
  * Proposito: adquirir o contexto assíncrono do meio simulado.
  * Pre-condições: destino vazio e configuração integralmente válida.
- * Effeitos: reserva o meio e uma conclusão por fila. Retorno: zero ou -errno.
+ * Effeitos: reserva o meio e uma conclusão por etiqueta. Retorno: zero ou erro.
  * Razão: toda posse nasce antes que a taboa seja entregue ao alvo.
  */
 int preparar_meio_assincrono_simulado(

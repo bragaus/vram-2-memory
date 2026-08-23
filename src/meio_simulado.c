@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Uma fila conserva somente a sentença que ainda não foi colhida. */
+/* Uma etiqueta conserva somente a sentença que ainda não foi colhida. */
 struct conclusao_simulada {
     funcao_de_conclusao_do_meio concluir;
     void *argumento;
@@ -13,11 +13,12 @@ struct conclusao_simulada {
     int pendente;
 };
 
-/* O invólucro reúne o reservatório e uma escrivaninha por fila. */
+/* O invólucro reúne o reservatório e uma escrivaninha por etiqueta. */
 struct meio_assincrono_simulado {
     struct meio_simulado meio;
     struct conclusao_simulada *conclusoes;
     int quantidade_de_filas;
+    int profundidade_das_filas;
 };
 
 /*
@@ -156,7 +157,10 @@ int preparar_meio_assincrono_simulado(
 
     if (contexto == 0 || *contexto != 0 || configuracao == 0 ||
         configuracao->capacidade_em_bytes == 0 ||
-        configuracao->quantidade_de_filas <= 0) return -EINVAL;
+        configuracao->quantidade_de_filas <= 0 ||
+        configuracao->profundidade_das_filas <= 0) return -EINVAL;
+    if ((size_t)configuracao->quantidade_de_filas > SIZE_MAX /
+            (size_t)configuracao->profundidade_das_filas) return -EOVERFLOW;
     figura = calloc(1, sizeof(*figura));
     if (figura == 0) return -ENOMEM;
     if (!criar_meio_simulado(&figura->meio,
@@ -165,7 +169,8 @@ int preparar_meio_assincrono_simulado(
         return -ENOMEM;
     }
     figura->conclusoes = calloc(
-        (size_t)configuracao->quantidade_de_filas,
+        (size_t)configuracao->quantidade_de_filas *
+            (size_t)configuracao->profundidade_das_filas,
         sizeof(*figura->conclusoes));
     if (figura->conclusoes == 0) {
         destruir_meio_simulado(&figura->meio);
@@ -173,6 +178,7 @@ int preparar_meio_assincrono_simulado(
         return -ENOMEM;
     }
     figura->quantidade_de_filas = configuracao->quantidade_de_filas;
+    figura->profundidade_das_filas = configuracao->profundidade_das_filas;
     *contexto = figura;
     return 0;
 }
@@ -237,23 +243,26 @@ int aquecer_fila_do_meio_simulado(void *contexto, int indice_da_fila,
 
 /*
  * LEMMA DA ESCRIVANINHA NUMERADA
- * Proposito: achar a conclusão pertencente a uma fila válida.
- * Pre-condições: nenhuma; contexto e índice poderão ser estranhos.
+ * Proposito: achar a conclusão pertencente a uma etiqueta válida.
+ * Pre-condições: nenhuma; contexto, fila e etiqueta poderão ser estranhos.
  * Effeitos: nenhum. Retorno: escrivaninha ou nulo fora do domínio.
  * Razão: toda consulta de fila emprega uma só demonstração de limites.
  */
 static struct conclusao_simulada *achar_conclusao_simulada(
-    struct meio_assincrono_simulado *figura, int indice_da_fila)
+    struct meio_assincrono_simulado *figura, int indice_da_fila, int etiqueta)
 {
     if (figura == 0 || indice_da_fila < 0 ||
-        indice_da_fila >= figura->quantidade_de_filas) return 0;
-    return &figura->conclusoes[indice_da_fila];
+        indice_da_fila >= figura->quantidade_de_filas || etiqueta < 0 ||
+        etiqueta >= figura->profundidade_das_filas) return 0;
+    return &figura->conclusoes[
+        (size_t)indice_da_fila * (size_t)figura->profundidade_das_filas +
+        (size_t)etiqueta];
 }
 
 /*
  * THEOREMA DA LEITURA PROMETTIDA
  * Proposito: transportar agora e differir a sentença até a colheita.
- * Pre-condições: fila ociosa, destino vivo e região contida.
+ * Pre-condições: etiqueta ociosa, destino vivo e região contida.
  * Effeitos: preenche o destino e arma exactamente uma conclusão.
  * Retorno: zero quando acceita, ou erro negativo sem promessa ulterior.
  * Razão: o simulador imita a separação temporal do futuro DMA.
@@ -265,9 +274,8 @@ int submeter_leitura_ao_meio_simulado(
 {
     struct meio_assincrono_simulado *figura = contexto;
     struct conclusao_simulada *conclusao = achar_conclusao_simulada(
-        figura, indice_da_fila);
+        figura, indice_da_fila, etiqueta);
 
-    (void)etiqueta;
     if (conclusao == 0 || concluir == 0 || destino == 0 ||
         !intervallo_do_meio_e_valido(
             &figura->meio, deslocamento, quantidade_de_bytes)) return -EINVAL;
@@ -284,7 +292,7 @@ int submeter_leitura_ao_meio_simulado(
 /*
  * THEOREMA DA ESCRIPTA PROMETTIDA
  * Proposito: depositar agora e differir a sentença até a colheita.
- * Pre-condições: fila ociosa, origem viva e região contida.
+ * Pre-condições: etiqueta ociosa, origem viva e região contida.
  * Effeitos: altera o reservatório e arma exactamente uma conclusão.
  * Retorno: zero quando acceita, ou erro negativo sem promessa ulterior.
  * Razão: a mesma ordem temporal governa as duas direcções do transporte.
@@ -296,9 +304,8 @@ int submeter_escripta_ao_meio_simulado(
 {
     struct meio_assincrono_simulado *figura = contexto;
     struct conclusao_simulada *conclusao = achar_conclusao_simulada(
-        figura, indice_da_fila);
+        figura, indice_da_fila, etiqueta);
 
-    (void)etiqueta;
     if (conclusao == 0 || concluir == 0 || origem == 0 ||
         !intervallo_do_meio_e_valido(
             &figura->meio, deslocamento, quantidade_de_bytes)) return -EINVAL;
@@ -315,7 +322,7 @@ int submeter_escripta_ao_meio_simulado(
 /*
  * COROLLARIO DO ZERO PROMETTIDO
  * Proposito: apagar agora e differir a sentença até a colheita.
- * Pre-condições: fila ociosa e região contida no reservatório.
+ * Pre-condições: etiqueta ociosa e região contida no reservatório.
  * Effeitos: reduz a região a zero e arma exactamente uma conclusão.
  * Retorno: zero quando acceita, ou erro negativo sem promessa ulterior.
  * Razão: descarte e zero explícito partilham uma só operação material.
@@ -327,9 +334,8 @@ int submeter_zeragem_ao_meio_simulado(
 {
     struct meio_assincrono_simulado *figura = contexto;
     struct conclusao_simulada *conclusao = achar_conclusao_simulada(
-        figura, indice_da_fila);
+        figura, indice_da_fila, etiqueta);
 
-    (void)etiqueta;
     if (conclusao == 0 || concluir == 0 ||
         !intervallo_do_meio_e_valido(
             &figura->meio, deslocamento, quantidade_de_bytes)) return -EINVAL;
@@ -345,32 +351,41 @@ int submeter_zeragem_ao_meio_simulado(
 
 /*
  * THEOREMA DA COLHEITA SINGULAR
- * Proposito: entregar a promessa pendente da fila exactamente uma vez.
+ * Proposito: entregar promessas pendentes da fila até o orçamento.
  * Pre-condições: orçamento positivo e fila pertencente ao contexto.
  * Effeitos: desarma a escrivaninha antes de chamar o consulente.
- * Retorno: uma conclusão, zero na ausência ou erro negativo no domínio.
+ * Retorno: número de conclusões, zero na ausência ou erro no domínio.
  * Razão: desarmar primeiro permitte nova submissão nascida da conclusão.
  */
 int colher_meio_simulado(void *contexto, int indice_da_fila, int orcamento)
 {
     struct meio_assincrono_simulado *figura = contexto;
-    struct conclusao_simulada *conclusao = achar_conclusao_simulada(
-        figura, indice_da_fila);
-    funcao_de_conclusao_do_meio concluir;
-    void *argumento;
-    int erro;
+    int etiqueta;
+    int quantidade_colhida = 0;
 
-    if (conclusao == 0 || orcamento <= 0) return -EINVAL;
-    if (!conclusao->pendente) return 0;
-    concluir = conclusao->concluir;
-    argumento = conclusao->argumento;
-    erro = conclusao->erro;
-    conclusao->concluir = 0;
-    conclusao->argumento = 0;
-    conclusao->erro = 0;
-    conclusao->pendente = 0;
-    concluir(argumento, erro);
-    return 1;
+    if (figura == 0 || indice_da_fila < 0 ||
+        indice_da_fila >= figura->quantidade_de_filas || orcamento <= 0)
+        return -EINVAL;
+    for (etiqueta = 0; etiqueta < figura->profundidade_das_filas &&
+         quantidade_colhida < orcamento; etiqueta++) {
+        struct conclusao_simulada *conclusao = achar_conclusao_simulada(
+            figura, indice_da_fila, etiqueta);
+        funcao_de_conclusao_do_meio concluir;
+        void *argumento;
+        int erro;
+
+        if (!conclusao->pendente) continue;
+        concluir = conclusao->concluir;
+        argumento = conclusao->argumento;
+        erro = conclusao->erro;
+        conclusao->concluir = 0;
+        conclusao->argumento = 0;
+        conclusao->erro = 0;
+        conclusao->pendente = 0;
+        concluir(argumento, erro);
+        quantidade_colhida++;
+    }
+    return quantidade_colhida;
 }
 
 /*

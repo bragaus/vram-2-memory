@@ -123,7 +123,7 @@ int injectar_erro_da_submissao_cuda(
  * Proposito: revelar a taboa assíncrona do reservatório CUDA.
  * Pre-condições: nenhuma; a taboa possue duração estática.
  * Effeitos: nenhum. Retorno: operações immutáveis do meio CUDA.
- * Razão: a lei commum encobre a execução material hoje synchrona.
+ * Razão: a lei commum encobre streams e eventos pertencentes ás etiquetas.
  */
 const struct operacoes_do_meio *obter_operacoes_do_meio_cuda(void);
 

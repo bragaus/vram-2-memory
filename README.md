@@ -82,7 +82,9 @@ operação`, recusa transbordamento ou excedente de `RLIMIT_MEMLOCK` e declara a
 quantidade necessária, o limite observado e o remédio `LimitMEMLOCK` ou
 `ulimit -l`. Toda a reserva alinhada nasce então de uma só vez; no caminho CUDA
 ella é registrada integralmente. Cada fila demonstra ida, volta, zeragem e
-evento antes de consentir `START_DEV`.
+evento antes de consentir `START_DEV`. Durante o serviço, cada etiqueta possue
+evento CUDA sem medição; submissão e colheita são separadas, e somente a
+callback no fio proprietário conclue e rearma o pedido ublk.
 
 A antiga forma `vram-2-memory CAP FILAS PROF MAX PRAZO [GPU]` foi retirada. Sua
 migração explícita é iniciar `vramdiskd ID` e enviar os mesmos números por

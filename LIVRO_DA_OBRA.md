@@ -344,9 +344,9 @@ A taboa dinâmica da prova nomeou somente `libcuda.so.1` e `libc.so.6`, sem
 `cudart`, RPATH ou RUNPATH do Toolkit. O servidor integral ligou com `libcuda`
 e a VM ublk simulada tornou a fechar verde sem copiar `libcudart`.
 
-**Limite conhecido:** as submissões da Driver API ainda synchronizam a corrente
-antes de armar a conclusão. Eventos por etiqueta e progresso verdadeiramente
-assíncrono pertencem ao chamado #30. **Q.E.D.**
+**Limite conhecido naquela porta:** as submissões da Driver API ainda
+synchronizavam a corrente antes de armar a conclusão. Eventos por etiqueta e
+progresso assíncrono pertenciam ao chamado #30. **Q.E.D.**
 
 ## § XIX. DA MATERIA ANTERIOR AO APPARELHO
 
@@ -388,6 +388,52 @@ saneador declarou zero erros e zero octetos perdidos. A VM tornou a confrontar
 4 KiB, 64 KiB e 1 MiB com CRC32C, `err=0`, operação inválida recusada e
 restituição integral do único ublk creado.
 
-**Limite conhecido:** a prova ublk permanece simulada; a GPU foi demonstrada
-isoladamente, sem publicar bloco CUDA. O progresso sem synchronização da
-corrente e os eventos por etiqueta pertencem ao chamado #30. **Q.E.D.**
+**Limite conhecido naquela porta:** a prova ublk permanecia simulada; a GPU
+fora demonstrada isoladamente, sem publicar bloco CUDA. O progresso por eventos
+pertencia ao chamado #30. **Q.E.D.**
+
+## § XX. DOS MARCOS DE CADA ETIQUETA
+
+O chamado #30 deu a cada par `(fila, etiqueta)` conclusão e `CUevent` próprios,
+creados com `CU_EVENT_DISABLE_TIMING` antes da publicação. Cada fila conserva
+uma `CUstream` não bloqueante e numera suas submissões; a colheita consulta
+sempre a promessa mais antiga, preservando a ordem material mesmo quando duas
+etiquetas já se acham promptas.
+
+Leitura, escripta e zeragem assíncronas já não chamam
+`cuStreamSynchronize`. Depois de a Driver API acceitar o trabalho, registram o
+evento e devolvem; `CUDA_ERROR_NOT_READY` conserva buffer, evento e etiqueta
+pendentes. Êxito ou erro tardio desarma a promessa antes de executar exactamente
+uma callback no mesmo fio proprietário. Recusa immediata promette callback
+nenhuma.
+
+O alvo ublk deixou de guardar testemunho na pilha da submissão. O registro
+persistente da etiqueta conserva contexto e origem; o trabalhador colhe seus
+eventos, conclue o pedido no núcleo e somente então rearma a etiqueta. O caminho
+quente não reserva memória, não formata texto e não toma trava entre filas.
+
+A prova CUDA recebe artifícios compilados exclusivamente em seu binário. Ella
+impõe `NOT_READY`, recusa immediata e erro differido, submette etiquetas na
+ordem inversa de seus números e demonstra: ordem de callback, zero callbacks
+na recusa, uma callback `-EIO` no erro tardio e impossibilidade de reutilização
+prematura. O servidor integral não exporta os symbolos de injecção.
+
+Executaram-se:
+
+```text
+make -B provar
+make -B provar_cuda
+compute-sanitizer --tool memcheck --leak-check full \
+  ./construcao/provar_meio_cuda
+PKG_CONFIG_PATH=/home/bragaus/.local/ublk-stack/lib/pkgconfig \
+  make -B preparar_cuda
+DURACAO_DO_FIO_EM_SEGUNDOS=5 ./testes/provar_ublk_simulado_vm.sh
+```
+
+A RTX 3060 devolveu zero erros e zero octetos perdidos no saneador. Na VM, três
+trabalhos concorrentes confrontaram 4 KiB, 64 KiB e 1 MiB com CRC32C e
+`err=0`; o único ublk creado foi integralmente restituído.
+
+**Limite conhecido:** a fila hoje cede CPU e torna a consultar eventos enquanto
+possue DMA pendente. Prazo finito, falha terminal e drenagem limitada pertencem
+ao chamado #31. O bloco CUDA real ainda não foi publicado. **Q.E.D.**

@@ -6,6 +6,7 @@ DIRECTORIO_DA_CONSTRUCAO := construcao
 PROVAS := $(DIRECTORIO_DA_CONSTRUCAO)/provar_transicoes \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_configuracao \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_configuracao_decimal \
+	$(DIRECTORIO_DA_CONSTRUCAO)/provar_plano_da_memoria \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_carga_de_creacao \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_governo_do_apparelho \
 	$(DIRECTORIO_DA_CONSTRUCAO)/provar_ordens_da_instancia \
@@ -62,6 +63,10 @@ $(DIRECTORIO_DA_CONSTRUCAO)/provar_configuracao: \
 
 $(DIRECTORIO_DA_CONSTRUCAO)/provar_configuracao_decimal: testes/provar_configuracao_decimal.c \
 		src/configuracao_decimal.c src/numero_decimal.c src/configuracao.c | $(DIRECTORIO_DA_CONSTRUCAO)
+	$(COMPILADOR) $(AVISOS) $^ -o $@
+
+$(DIRECTORIO_DA_CONSTRUCAO)/provar_plano_da_memoria: \
+		testes/provar_plano_da_memoria.c src/plano_da_memoria.c | $(DIRECTORIO_DA_CONSTRUCAO)
 	$(COMPILADOR) $(AVISOS) $^ -o $@
 
 $(DIRECTORIO_DA_CONSTRUCAO)/provar_carga_de_creacao: \

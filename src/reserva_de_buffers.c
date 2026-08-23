@@ -72,3 +72,21 @@ void *achar_buffer_reservado(const struct reserva_de_buffers *reserva,
             reserva->quantidade_em_bytes - deslocamento) return 0;
     return reserva->inicio + (size_t)deslocamento;
 }
+
+/*
+ * COROLLARIO DA RESTITUICAO INTEGRAL
+ * Proposito: devolver a região única e apagar sua geometria.
+ * Pre-condições: nenhum registro exterior permanece sobre a memória.
+ * Effeitos: chama free e reduz todos os campos a zero.
+ * Retorno: nenhum. Razão: a figura vazia torna o termo repetido regular.
+ */
+void destruir_reserva_de_buffers(struct reserva_de_buffers *reserva)
+{
+    if (reserva == 0) return;
+    free(reserva->inicio);
+    reserva->inicio = 0;
+    reserva->quantidade_em_bytes = 0;
+    reserva->tamanho_do_buffer = 0;
+    reserva->quantidade_de_filas = 0;
+    reserva->profundidade_das_filas = 0;
+}

@@ -32,31 +32,42 @@ int provar_contrato_assincrono_cuda(void)
 {
     struct configuracao_do_apparelho configuracao = {0};
     struct testemunho_da_conclusao_cuda testemunho = {0};
+    struct reserva_de_buffers reserva = {0};
     const struct operacoes_do_meio *operacoes = obter_operacoes_do_meio_cuda();
     unsigned char *memoria = 0;
     void *contexto = 0;
+    int indice;
+    int memoria_registrada = 0;
     int resultado = 0;
 
     configuracao.indice_da_gpu = 0;
     configuracao.capacidade_em_bytes = 4096;
-    configuracao.quantidade_de_filas = 1;
+    configuracao.quantidade_de_filas = 2;
     if (operacoes == 0 ||
         operacoes->preparar(&contexto, &configuracao) < 0 ||
-        operacoes->vincular_fila(contexto, 0) < 0) goto termo;
-    memoria = reservar_memoria_intermediaria_cuda(4096);
-    if (memoria == 0 ||
-        operacoes->aquecer_fila(contexto, 0, memoria, 4096) < 0) goto termo;
+        criar_reserva_de_buffers(&reserva, 2, 1, 4096) < 0 ||
+        !registrar_memoria_intermediaria_cuda(
+            reserva.inicio, (size_t)reserva.quantidade_em_bytes)) goto termo;
+    memoria_registrada = 1;
+    for (indice = 0; indice < 2; indice++) {
+        memoria = achar_buffer_reservado(&reserva, indice, 0, 4096);
+        if (operacoes->vincular_fila(contexto, indice) < 0 ||
+            operacoes->aquecer_fila(
+                contexto, indice, memoria, 4096) < 0) goto termo;
+    }
     memoria[0] = 29;
-    if (operacoes->escrever(contexto, 0, 0, memoria, 1,
+    if (operacoes->escrever(contexto, 1, 0, memoria, 1,
                             testemunhar_conclusao_cuda, &testemunho) < 0 ||
         testemunho.quantidade != 0 ||
-        operacoes->colher(contexto, 0, 1) != 1 ||
+        operacoes->colher(contexto, 1, 1) != 1 ||
         testemunho.quantidade != 1 || testemunho.erro != 0 ||
-        operacoes->colher(contexto, 0, 1) != 0) goto termo;
+        operacoes->colher(contexto, 1, 1) != 0) goto termo;
     resultado = 1;
 
 termo:
-    if (!destruir_memoria_intermediaria_cuda(memoria)) resultado = 0;
+    if (memoria_registrada &&
+        !desregistrar_memoria_intermediaria_cuda(reserva.inicio)) resultado = 0;
+    destruir_reserva_de_buffers(&reserva);
     if (contexto != 0) operacoes->destruir(contexto);
     return resultado;
 }

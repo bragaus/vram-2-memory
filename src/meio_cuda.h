@@ -4,7 +4,6 @@
 #include <cuda.h>
 #include <stdint.h>
 
-struct ublksrv_queue;
 /* O reservatório reside na GPU; sua capacidade limita todo deslocamento. */
 struct meio_cuda {
     CUdeviceptr memoria_da_gpu;
@@ -61,15 +60,6 @@ int destruir_transportador_cuda(struct transportador_cuda *transportador);
 void *reservar_memoria_intermediaria_cuda(uint32_t quantidade_de_bytes);
 
 /*
- * Proposito: adaptar a reserva CUDA á assinatura exterior de libublksrv.
- * Pre-condições: tamanho positivo; fila e etiqueta poderão ser ignoradas.
- * Effeitos: adquire memória CPU fixada. Retorno: endereço ou nulo.
- * Razão: a adaptação pertence ao meio, não ao alvo que o empregará.
- */
-void *reservar_memoria_exterior_cuda(
-    const struct ublksrv_queue *fila_exterior, int etiqueta, int tamanho);
-
-/*
  * Proposito: devolver a memória CPU fixada depois da última transferência.
  * Pre-condições: contexto corrente; endereço nasceu de cuMemHostAlloc ou nulo.
  * Effeitos: chama cuMemFreeHost. Retorno: unidade no êxito ou zero.
@@ -93,15 +83,6 @@ int registrar_memoria_intermediaria_cuda(void *memoria,
  * Razão: a GPU perde accesso antes que a região torne ao alocador ordinário.
  */
 int desregistrar_memoria_intermediaria_cuda(void *memoria);
-
-/*
- * Proposito: adaptar a restituição CUDA á assinatura de libublksrv.
- * Pre-condições: memória fixada ou nula; fila e etiqueta são exteriores.
- * Effeitos: restitue a região. Retorno: nenhum.
- * Razão: o meio encerra a posse material que elle proprio concedeu.
- */
-void destruir_memoria_exterior_cuda(
-    const struct ublksrv_queue *fila_exterior, void *memoria, int etiqueta);
 
 /*
  * Proposito: copiar VRAM para memória CPU fixada pela corrente da fila.

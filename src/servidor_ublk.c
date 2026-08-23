@@ -4,14 +4,17 @@
 #include "meio_simulado.h"
 #include "monitor_do_observatorio.h"
 #include "observador_de_si.h"
+#include "plano_da_memoria.h"
 #include <errno.h>
 #include <limits.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdatomic.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <ublksrv.h>
@@ -44,6 +47,34 @@ struct incumbencia_da_fila_ublk {
 static struct estado_do_servidor_ublk *servidor_em_exercicio;
 static pthread_mutex_t exclusao_do_governo = PTHREAD_MUTEX_INITIALIZER;
 static atomic_int termo_requerido;
+
+/*
+ * LEMMA DA CONCESSAO FIXAVEL
+ * Proposito: confrontar a geometria com RLIMIT_MEMLOCK antes da reserva.
+ * Pre-condições: configuração julgada. Effeitos: consulta e poderá informar.
+ * Retorno: zero, erro da consulta, do cálculo ou -ENOMEM na insufficiência.
+ * Razão: quantidade, limite e remédio devem preceder qualquer publicação.
+ */
+static int conferir_memoria_fixavel_do_servidor(
+    const struct configuracao_do_apparelho *configuracao)
+{
+    struct rlimit limite;
+    uint64_t limite_em_bytes;
+    uint64_t necessaria_em_bytes = 0;
+    int resultado;
+
+    if (getrlimit(RLIMIT_MEMLOCK, &limite) != 0) return -errno;
+    limite_em_bytes = limite.rlim_cur == RLIM_INFINITY ? UINT64_MAX :
+        (uint64_t)limite.rlim_cur;
+    resultado = conferir_limite_da_memoria_intermediaria(
+        configuracao, limite_em_bytes, &necessaria_em_bytes);
+    if (resultado == -ENOMEM)
+        fprintf(stderr, "Memoria fixada necessaria=%llu limite=%llu; "
+                "eleve LimitMEMLOCK ou ulimit -l.\n",
+                (unsigned long long)necessaria_em_bytes,
+                (unsigned long long)limite_em_bytes);
+    return resultado;
+}
 
 /*
  * LEMMA DO GABINETE DE EXECUCAO
@@ -541,6 +572,8 @@ int preparar_servidor_ublk(struct estado_do_servidor_ublk *servidor,
 
     if (servidor == 0 || !configuracao_do_apparelho_e_valida(configuracao))
         return -EINVAL;
+    resultado = conferir_memoria_fixavel_do_servidor(configuracao);
+    if (resultado < 0) return resultado;
     (void)pthread_mutex_lock(&exclusao_do_governo);
     if (servidor_em_exercicio != 0) {
         (void)pthread_mutex_unlock(&exclusao_do_governo);

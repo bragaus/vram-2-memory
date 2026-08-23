@@ -46,3 +46,29 @@ int criar_reserva_de_buffers(struct reserva_de_buffers *reserva,
     reserva->profundidade_das_filas = profundidade_das_filas;
     return 0;
 }
+
+/*
+ * LEMMA DO QUINHAO NUMERADO
+ * Proposito: achar o buffer singular de uma fila e etiqueta.
+ * Pre-condições: nenhuma; toda grandeza exterior será cercada.
+ * Effeitos: nenhum. Retorno: início do quinhão ou nulo na recusa.
+ * Razão: a ordem fila vezes profundidade mais etiqueta é determinística.
+ */
+void *achar_buffer_reservado(const struct reserva_de_buffers *reserva,
+                             int indice_da_fila, int etiqueta, int tamanho)
+{
+    uint64_t ordem;
+    uint64_t deslocamento;
+
+    if (reserva == 0 || reserva->inicio == 0 || indice_da_fila < 0 ||
+        indice_da_fila >= reserva->quantidade_de_filas || etiqueta < 0 ||
+        etiqueta >= reserva->profundidade_das_filas || tamanho <= 0 ||
+        (uint32_t)tamanho > reserva->tamanho_do_buffer) return 0;
+    ordem = (uint64_t)indice_da_fila *
+        (uint64_t)reserva->profundidade_das_filas + (uint64_t)etiqueta;
+    deslocamento = ordem * reserva->tamanho_do_buffer;
+    if (deslocamento > reserva->quantidade_em_bytes ||
+        reserva->tamanho_do_buffer >
+            reserva->quantidade_em_bytes - deslocamento) return 0;
+    return reserva->inicio + (size_t)deslocamento;
+}

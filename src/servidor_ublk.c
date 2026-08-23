@@ -80,6 +80,37 @@ static int conferir_memoria_fixavel_do_servidor(
 }
 
 /*
+ * THEOREMA DOS BUFFERS ANTERIORES
+ * Proposito: adquirir e registrar todos os buffers CUDA antes do controle.
+ * Pre-condições: meio CUDA preparado e geometria julgada.
+ * Effeitos: publica a reserva completa e sua marca de registro.
+ * Retorno: zero ou erro negativo depois de restituir posse parcial.
+ * Razão: callback de etiqueta limitar-se-á a escolher memória já existente.
+ */
+static int preparar_buffers_do_servidor(
+    struct estado_do_servidor_ublk *servidor)
+{
+    const struct configuracao_do_apparelho *configuracao;
+    int resultado;
+
+    if (servidor == 0 || !servidor->empregar_cuda) return 0;
+    configuracao = servidor->configuracao;
+    resultado = criar_reserva_de_buffers(
+        &servidor->reserva_de_buffers, configuracao->quantidade_de_filas,
+        configuracao->profundidade_das_filas,
+        configuracao->maior_operacao_em_bytes);
+    if (resultado < 0) return resultado;
+    if (!registrar_memoria_intermediaria_cuda(
+            servidor->reserva_de_buffers.inicio,
+            (size_t)servidor->reserva_de_buffers.quantidade_em_bytes)) {
+        destruir_reserva_de_buffers(&servidor->reserva_de_buffers);
+        return -EIO;
+    }
+    servidor->buffers_registrados = 1;
+    return 0;
+}
+
+/*
  * LEMMA DO GABINETE DE EXECUCAO
  * Proposito: assegurar a casa onde ublksrv conserva o processo dirigente.
  * Pre-condições: caminho absoluto, não vazio e pertencente á bibliotheca.
@@ -607,6 +638,11 @@ int preparar_servidor_ublk(struct estado_do_servidor_ublk *servidor,
     servidor->memoria_fixada = 1;
     resultado = servidor->operacoes_do_meio->preparar(
         &servidor->contexto_do_meio, configuracao);
+    if (resultado < 0) {
+        desmontar_servidor_ublk(servidor);
+        return resultado;
+    }
+    resultado = preparar_buffers_do_servidor(servidor);
     if (resultado < 0) {
         desmontar_servidor_ublk(servidor);
         return resultado;

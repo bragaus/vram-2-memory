@@ -455,6 +455,38 @@ const struct ublksrv_tgt_type *obter_operacoes_do_alvo_ublk(void)
 }
 
 /*
+ * LEMMA DA CESSAO PREPARADA
+ * Proposito: entregar á libublksrv o quinhão já registrado da etiqueta.
+ * Pre-condições: servidor singular, fila e reserva integralmente preparados.
+ * Effeitos: nenhum. Retorno: buffer exacto ou nulo na identidade estranha.
+ * Razão: o caminho exterior escolhe memória, mas jámais a reserva.
+ */
+static void *ceder_buffer_cuda_preparado(const struct ublksrv_queue *fila,
+                                         int etiqueta, int tamanho)
+{
+    if (fila == 0 || servidor_em_exercicio == 0 ||
+        !servidor_em_exercicio->buffers_registrados) return 0;
+    return achar_buffer_reservado(
+        &servidor_em_exercicio->reserva_de_buffers,
+        fila->q_id, etiqueta, tamanho);
+}
+
+/*
+ * COROLLARIO DA RESTITUICAO DIFFERIDA
+ * Proposito: conservar o quinhão até que a reserva integral seja desfeita.
+ * Pre-condições: buffer nasceu da reserva singular preparada.
+ * Effeitos: nenhum. Retorno: nenhum.
+ * Razão: cada etiqueta não possue separadamente a região ou seu registro.
+ */
+static void conservar_buffer_cuda_preparado(
+    const struct ublksrv_queue *fila, void *memoria, int etiqueta)
+{
+    (void)fila;
+    (void)memoria;
+    (void)etiqueta;
+}
+
+/*
  * COROLLARIO DAS OPERACOES CUDA
  * Proposito: acrescentar buffers fixados á passagem commum das requisições.
  * Pre-condições: execução CUDA disponível antes de iniciar as filas.
@@ -467,8 +499,8 @@ const struct ublksrv_tgt_type *obter_operacoes_do_alvo_cuda(void)
         .name = "vram_2_memory_cuda",
         .init_tgt = inicializar_alvo_ublk,
         .handle_io_async = tratar_requisicao_ublk,
-        .alloc_io_buf = reservar_memoria_exterior_cuda,
-        .free_io_buf = destruir_memoria_exterior_cuda
+        .alloc_io_buf = ceder_buffer_cuda_preparado,
+        .free_io_buf = conservar_buffer_cuda_preparado
     };
 
     return &operacoes;

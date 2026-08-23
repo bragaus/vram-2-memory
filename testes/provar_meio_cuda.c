@@ -39,6 +39,7 @@ int provar_contrato_assincrono_cuda(void)
     int indice;
     int memoria_registrada = 0;
     int resultado = 0;
+    int tentativas = 0;
 
     configuracao.indice_da_gpu = 0;
     configuracao.capacidade_em_bytes = 4096;
@@ -59,9 +60,12 @@ int provar_contrato_assincrono_cuda(void)
     memoria[0] = 29;
     if (operacoes->escrever(contexto, 1, 0, 0, memoria, 1,
                             testemunhar_conclusao_cuda, &testemunho) < 0 ||
-        testemunho.quantidade != 0 ||
-        operacoes->colher(contexto, 1, 1) != 1 ||
-        testemunho.quantidade != 1 || testemunho.erro != 0 ||
+        testemunho.quantidade != 0) goto termo;
+    while (testemunho.quantidade == 0 && tentativas < 1000000) {
+        if (operacoes->colher(contexto, 1, 1) < 0) goto termo;
+        tentativas++;
+    }
+    if (testemunho.quantidade != 1 || testemunho.erro != 0 ||
         operacoes->colher(contexto, 1, 1) != 0) goto termo;
     resultado = 1;
 

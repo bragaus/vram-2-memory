@@ -479,12 +479,37 @@ static struct conclusao_cuda *achar_conclusao_cuda(
 }
 
 /*
+ * LEMMA DA PROMESSA MARCADA
+ * Proposito: ligar a última submissão da corrente ao evento da etiqueta.
+ * Pre-condições: DMA acceito, conclusão ociosa e corrente proprietária.
+ * Effeitos: registra evento e arma callback; synchroniza só na falha do marco.
+ * Retorno: zero quando promette callback ou -EIO sem promessa ulterior.
+ * Razão: evento acceito, e não espera da corrente, encerra a submissão.
+ */
+static int armar_promessa_cuda(
+    struct conclusao_cuda *conclusao,
+    struct transportador_cuda *transportador,
+    funcao_de_conclusao_do_meio concluir, void *argumento)
+{
+    if (cuEventRecord(conclusao->evento, transportador->corrente) !=
+        CUDA_SUCCESS) {
+        (void)cuStreamSynchronize(transportador->corrente);
+        return -EIO;
+    }
+    conclusao->concluir = concluir;
+    conclusao->argumento = argumento;
+    conclusao->erro = 0;
+    conclusao->pendente = 1;
+    return 0;
+}
+
+/*
  * THEOREMA DA LEITURA CUDA PROMETTIDA
  * Proposito: transportar por DMA e differir a sentença até a colheita.
  * Pre-condições: etiqueta ociosa, destino fixado e região contida.
- * Effeitos: preenche o destino e arma exactamente uma conclusão.
+ * Effeitos: submette cópia, marca evento e arma uma conclusão.
  * Retorno: zero quando acceita, ou erro negativo sem promessa ulterior.
- * Razão: a taboa já separa tempos ainda que a execução espere a corrente.
+ * Razão: a colheita, e não a submissão, observará o termo do DMA.
  */
 int submeter_leitura_ao_meio_cuda(
     void *contexto, int indice_da_fila, int etiqueta, uint64_t deslocamento,
@@ -501,20 +526,20 @@ int submeter_leitura_ao_meio_cuda(
         !regiao_cuda_e_valida(transportador, deslocamento,
                               quantidade_de_bytes)) return -EINVAL;
     if (conclusao->pendente) return -EBUSY;
-    if (!ler_meio_cuda(transportador, deslocamento, destino,
-                       quantidade_de_bytes)) return -EIO;
-    conclusao->concluir = concluir;
-    conclusao->argumento = argumento;
-    conclusao->erro = 0;
-    conclusao->pendente = 1;
-    return 0;
+    if (!escolher_contexto_cuda(transportador->meio) ||
+        cuMemcpyDtoHAsync(destino, transportador->meio->memoria_da_gpu +
+                                      deslocamento,
+                          (size_t)quantidade_de_bytes,
+                          transportador->corrente) != CUDA_SUCCESS) return -EIO;
+    return armar_promessa_cuda(
+        conclusao, transportador, concluir, argumento);
 }
 
 /*
  * THEOREMA DA ESCRIPTA CUDA PROMETTIDA
  * Proposito: depositar por DMA e differir a sentença até a colheita.
  * Pre-condições: etiqueta ociosa, origem fixada e região contida.
- * Effeitos: altera a VRAM e arma exactamente uma conclusão.
+ * Effeitos: submette cópia, marca evento e arma uma conclusão.
  * Retorno: zero quando acceita, ou erro negativo sem promessa ulterior.
  * Razão: ambas as direcções submettem-se á mesma ordem temporal.
  */
@@ -533,20 +558,19 @@ int submeter_escripta_ao_meio_cuda(
         !regiao_cuda_e_valida(transportador, deslocamento,
                               quantidade_de_bytes)) return -EINVAL;
     if (conclusao->pendente) return -EBUSY;
-    if (!escrever_meio_cuda(transportador, deslocamento, origem,
-                            quantidade_de_bytes)) return -EIO;
-    conclusao->concluir = concluir;
-    conclusao->argumento = argumento;
-    conclusao->erro = 0;
-    conclusao->pendente = 1;
-    return 0;
+    if (!escolher_contexto_cuda(transportador->meio) ||
+        cuMemcpyHtoDAsync(transportador->meio->memoria_da_gpu + deslocamento,
+                          origem, (size_t)quantidade_de_bytes,
+                          transportador->corrente) != CUDA_SUCCESS) return -EIO;
+    return armar_promessa_cuda(
+        conclusao, transportador, concluir, argumento);
 }
 
 /*
  * COROLLARIO DO ZERO CUDA PROMETTIDO
  * Proposito: apagar a VRAM e differir a sentença até a colheita.
  * Pre-condições: etiqueta ociosa e região contida no reservatório.
- * Effeitos: reduz a região a zero e arma exactamente uma conclusão.
+ * Effeitos: submette zeragem, marca evento e arma uma conclusão.
  * Retorno: zero quando acceita, ou erro negativo sem promessa ulterior.
  * Razão: descarte e zero explícito partilham uma só operação material.
  */
@@ -565,13 +589,12 @@ int submeter_zeragem_ao_meio_cuda(
         !regiao_cuda_e_valida(transportador, deslocamento,
                               quantidade_de_bytes)) return -EINVAL;
     if (conclusao->pendente) return -EBUSY;
-    if (!zerar_meio_cuda(transportador, deslocamento,
-                         quantidade_de_bytes)) return -EIO;
-    conclusao->concluir = concluir;
-    conclusao->argumento = argumento;
-    conclusao->erro = 0;
-    conclusao->pendente = 1;
-    return 0;
+    if (!escolher_contexto_cuda(transportador->meio) ||
+        cuMemsetD8Async(transportador->meio->memoria_da_gpu + deslocamento,
+                        0, (size_t)quantidade_de_bytes,
+                        transportador->corrente) != CUDA_SUCCESS) return -EIO;
+    return armar_promessa_cuda(
+        conclusao, transportador, concluir, argumento);
 }
 
 /*
@@ -591,18 +614,22 @@ int colher_meio_cuda(void *contexto, int indice_da_fila, int orcamento)
     if (figura == 0 || indice_da_fila < 0 ||
         indice_da_fila >= figura->quantidade_de_filas || orcamento <= 0)
         return -EINVAL;
+    if (!escolher_contexto_cuda(&figura->meio)) return -EIO;
     for (etiqueta = 0; etiqueta < figura->profundidade_das_filas &&
          quantidade_colhida < orcamento; etiqueta++) {
         struct conclusao_cuda *conclusao = achar_conclusao_cuda(
             figura, indice_da_fila, etiqueta);
         funcao_de_conclusao_do_meio concluir;
+        CUresult consulta_do_evento;
         void *argumento;
         int erro;
 
         if (!conclusao->pendente) continue;
+        consulta_do_evento = cuEventQuery(conclusao->evento);
+        if (consulta_do_evento == CUDA_ERROR_NOT_READY) continue;
         concluir = conclusao->concluir;
         argumento = conclusao->argumento;
-        erro = conclusao->erro;
+        erro = consulta_do_evento == CUDA_SUCCESS ? conclusao->erro : -EIO;
         conclusao->concluir = 0;
         conclusao->argumento = 0;
         conclusao->erro = 0;

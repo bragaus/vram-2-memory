@@ -46,7 +46,7 @@ int main(void)
     assert(cumprir_ordem_da_instancia(
         &governo, &mensagem, resposta, sizeof(resposta), &quantidade) == 0);
     assert(quantidade > 0 && strstr((char *)resposta, "\"ok\":true") != 0);
-    assert(strstr((char *)resposta, "\"estado\":\"VAZIO\"") != 0);
+    assert(strstr((char *)resposta, "\"estado\":\"ENCERRADO\"") != 0);
     mensagem.cabecalho.quantidade_da_carga = 1;
     assert(cumprir_ordem_da_instancia(
         &governo, &mensagem, resposta, sizeof(resposta), &quantidade) == 0);

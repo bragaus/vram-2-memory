@@ -57,16 +57,16 @@ int main(void)
         &governo, servir_prova_do_governo,
         terminar_prova_do_governo, &contexto) == 0);
     assert(contemplar_apparelho_governado(&governo, &estado, &resultado) == 0);
-    assert(estado == ESTADO_DO_GOVERNO_VAZIO && resultado == 0);
+    assert(estado == ESTADO_DO_GOVERNO_ENCERRADO && resultado == 0);
     assert(crear_apparelho_governado(&governo, &configuracao) == 0);
     while (!atomic_load(&contexto.iniciou)) { }
     assert(contemplar_apparelho_governado(&governo, &estado, &resultado) == 0);
-    assert(estado == ESTADO_DO_GOVERNO_EM_EXERCICIO);
+    assert(estado == ESTADO_DO_GOVERNO_SERVINDO);
     assert(crear_apparelho_governado(&governo, &configuracao) == -EBUSY);
     assert(encerrar_governo_do_apparelho(&governo) == -EBUSY);
     assert(destruir_apparelho_governado(&governo) == 0);
     assert(contemplar_apparelho_governado(&governo, &estado, &resultado) == 0);
-    assert(estado == ESTADO_DO_GOVERNO_VAZIO && resultado == 0);
+    assert(estado == ESTADO_DO_GOVERNO_ENCERRADO && resultado == 0);
     assert(encerrar_governo_do_apparelho(&governo) == 0);
     return 0;
 }

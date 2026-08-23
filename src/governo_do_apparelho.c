@@ -7,7 +7,7 @@
  * THEOREMA DO FIO PROPRIETARIO
  * Proposito: executar a faculdade de serviço e publicar seu termo.
  * Pre-condições: configuração copiada e estado inicializando.
- * Effeitos: transita para exercício e afinal vazio ou falhou.
+ * Effeitos: transita por pronto e servindo; afinal encerra ou falha.
  * Retorno: o governo recebido. Razão: resultado nasce no único fio possuidor.
  */
 static void *servir_apparelho_governado(void *argumento)
@@ -16,13 +16,14 @@ static void *servir_apparelho_governado(void *argumento)
     int resultado;
 
     (void)pthread_mutex_lock(&governo->exclusao);
-    governo->estado = ESTADO_DO_GOVERNO_EM_EXERCICIO;
+    governo->estado = ESTADO_DO_GOVERNO_PRONTO;
+    governo->estado = ESTADO_DO_GOVERNO_SERVINDO;
     (void)pthread_mutex_unlock(&governo->exclusao);
     resultado = governo->servir(&governo->configuracao, governo->contexto);
     (void)pthread_mutex_lock(&governo->exclusao);
     governo->resultado = resultado;
     governo->estado = resultado < 0 ? ESTADO_DO_GOVERNO_FALHOU :
-                                      ESTADO_DO_GOVERNO_VAZIO;
+                                      ESTADO_DO_GOVERNO_ENCERRADO;
     (void)pthread_mutex_unlock(&governo->exclusao);
     return governo;
 }
@@ -47,7 +48,7 @@ int preparar_governo_do_apparelho(struct governo_do_apparelho *governo,
     governo->servir = servir;
     governo->ordenar_termo = ordenar_termo;
     governo->contexto = contexto;
-    governo->estado = ESTADO_DO_GOVERNO_VAZIO;
+    governo->estado = ESTADO_DO_GOVERNO_ENCERRADO;
     return 0;
 }
 
@@ -64,7 +65,8 @@ int crear_apparelho_governado(struct governo_do_apparelho *governo,
     if (governo == 0 || !configuracao_do_apparelho_e_valida(figura))
         return -EINVAL;
     (void)pthread_mutex_lock(&governo->exclusao);
-    if (governo->fio_nascido || governo->estado != ESTADO_DO_GOVERNO_VAZIO) {
+    if (governo->fio_nascido ||
+        governo->estado != ESTADO_DO_GOVERNO_ENCERRADO) {
         (void)pthread_mutex_unlock(&governo->exclusao);
         return -EBUSY;
     }
@@ -73,7 +75,7 @@ int crear_apparelho_governado(struct governo_do_apparelho *governo,
     resultado = pthread_create(&governo->fio, 0,
                                servir_apparelho_governado, governo);
     if (resultado == 0) governo->fio_nascido = 1;
-    else governo->estado = ESTADO_DO_GOVERNO_VAZIO;
+    else governo->estado = ESTADO_DO_GOVERNO_ENCERRADO;
     (void)pthread_mutex_unlock(&governo->exclusao);
     return resultado == 0 ? 0 : -resultado;
 }
@@ -113,7 +115,7 @@ int destruir_apparelho_governado(struct governo_do_apparelho *governo)
         (void)pthread_mutex_unlock(&governo->exclusao);
         return -ENODEV;
     }
-    governo->estado = ESTADO_DO_GOVERNO_PARANDO;
+    governo->estado = ESTADO_DO_GOVERNO_ENCERRANDO;
     fio = governo->fio;
     (void)pthread_mutex_unlock(&governo->exclusao);
     resultado = governo->ordenar_termo(governo->contexto);

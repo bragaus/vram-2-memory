@@ -12,10 +12,11 @@ const char *nome_do_estado_do_governo(
     enum estado_do_governo_do_apparelho estado)
 {
     switch (estado) {
-    case ESTADO_DO_GOVERNO_VAZIO: return "VAZIO";
     case ESTADO_DO_GOVERNO_INICIALIZANDO: return "INICIALIZANDO";
-    case ESTADO_DO_GOVERNO_EM_EXERCICIO: return "EM_EXERCICIO";
-    case ESTADO_DO_GOVERNO_PARANDO: return "PARANDO";
+    case ESTADO_DO_GOVERNO_PRONTO: return "PRONTO";
+    case ESTADO_DO_GOVERNO_SERVINDO: return "SERVINDO";
+    case ESTADO_DO_GOVERNO_ENCERRANDO: return "ENCERRANDO";
+    case ESTADO_DO_GOVERNO_ENCERRADO: return "ENCERRADO";
     case ESTADO_DO_GOVERNO_FALHOU: return "FALHOU";
     default: return "DESCONHECIDO";
     }
@@ -35,7 +36,7 @@ int cumprir_ordem_da_instancia(
     unsigned char *resposta, size_t capacidade, uint32_t *quantidade)
 {
     struct configuracao_do_apparelho configuracao;
-    enum estado_do_governo_do_apparelho estado = ESTADO_DO_GOVERNO_VAZIO;
+    enum estado_do_governo_do_apparelho estado = ESTADO_DO_GOVERNO_ENCERRADO;
     int resultado_do_servico = 0;
     int erro = 0;
     int tamanho;

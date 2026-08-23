@@ -43,6 +43,7 @@ struct estado_do_servidor_ublk {
     pthread_t fio_do_observatorio;
     atomic_int ordenar_termo_do_observatorio;
     atomic_int falha_terminal;
+    atomic_int posses_em_quarentena;
     int observatorio_iniciado;
     int empregar_cuda;
     int buffers_registrados;
@@ -357,12 +358,45 @@ static int colher_transferencias_da_fila(
     struct contexto_da_fila_ublk *contexto = &incumbencia->contexto;
 
     while (contar_requisicoes_transferindo(contexto->fila) > 0) {
+        uint32_t etiqueta_vencida;
+        uint64_t instante_actual = ler_instante_monotonico();
         int quantidade_colhida = contexto->operacoes_do_meio->colher(
             contexto->contexto_do_meio, contexto->indice_da_fila,
             (int)contexto->fila->profundidade);
-        if (quantidade_colhida < 0) return quantidade_colhida;
+        if (instante_actual == 0 || quantidade_colhida < 0) {
+            atomic_store_explicit(&incumbencia->servidor->falha_terminal, 1,
+                                  memory_order_relaxed);
+            atomic_store_explicit(
+                &incumbencia->servidor->posses_em_quarentena, 1,
+                memory_order_relaxed);
+            return instante_actual == 0 ? -EIO : quantidade_colhida;
+        }
         if (contexto->resultado_assincrono < 0)
             return contexto->resultado_assincrono;
+        if (falhar_primeira_requisicao_vencida(
+                contexto->fila, instante_actual,
+                contexto->prazo_em_nanossegundos, -ETIMEDOUT,
+                &etiqueta_vencida)) {
+            struct registro_da_requisicao *registro =
+                &contexto->fila->registros[etiqueta_vencida];
+            registrar_operacao_observada(
+                contexto->contadores,
+                registro->operacao != UBLK_IO_OP_READ,
+                registro->quantidade_de_bytes,
+                instante_actual - registro->instante_inicial_em_nanossegundos,
+                -ETIMEDOUT);
+            (void)registrar_resultado_na_saude_da_fila(
+                &contexto->saude, -ETIMEDOUT, 1);
+            contexto->resultado_assincrono = -ETIMEDOUT;
+            atomic_store_explicit(&incumbencia->servidor->falha_terminal, 1,
+                                  memory_order_relaxed);
+            atomic_store_explicit(
+                &incumbencia->servidor->posses_em_quarentena, 1,
+                memory_order_relaxed);
+            return -ETIMEDOUT;
+        }
+        if (atomic_load_explicit(&incumbencia->servidor->falha_terminal,
+                                 memory_order_relaxed)) return -EIO;
         if (quantidade_colhida == 0) (void)sched_yield();
     }
     return contexto->resultado_assincrono;
@@ -421,6 +455,11 @@ responder:
         return argumento;
     }
     do {
+        if (atomic_load_explicit(&incumbencia->servidor->falha_terminal,
+                                 memory_order_relaxed)) {
+            incumbencia->resultado = -EIO;
+            break;
+        }
         incumbencia->resultado = ublksrv_process_io(fila_exterior);
         if (incumbencia->resultado >= 0)
             incumbencia->resultado = colher_transferencias_da_fila(
@@ -434,7 +473,9 @@ responder:
         /* Uma fila enferma ordena que suas irmãs também convirjam. */
         ublksrv_ctrl_stop_dev(incumbencia->servidor->controle);
     }
-    ublksrv_queue_deinit(fila_exterior);
+    if (!atomic_load_explicit(&incumbencia->servidor->posses_em_quarentena,
+                              memory_order_relaxed))
+        ublksrv_queue_deinit(fila_exterior);
     return argumento;
 }
 
@@ -723,8 +764,8 @@ int abrir_controle_ublk(struct estado_do_servidor_ublk *servidor)
  * COROLLARIO DO DESMONTE DO SERVIDOR
  * Proposito: restituir dispositivo, controle e meio na ordem inversa.
  * Pre-condições: todos os fios já convergiram ou nenhum foi iniciado.
- * Effeitos: remove o dispositivo do núcleo e liberta toda posse local.
- * Retorno: resultado da remoção, sem omittir a limpeza na falha.
+ * Effeitos: liberta posses seguras ou conserva as tocadas por DMA vencido.
+ * Retorno: -EIO na quarentena ou resultado da remoção e limpeza.
  * Razão: cada camada exterior morre antes da matéria que ella referencia.
  */
 int desmontar_servidor_ublk(struct estado_do_servidor_ublk *servidor)
@@ -735,6 +776,9 @@ int desmontar_servidor_ublk(struct estado_do_servidor_ublk *servidor)
     (void)pthread_mutex_lock(&exclusao_do_governo);
     if (servidor_em_exercicio == servidor) servidor_em_exercicio = 0;
     (void)pthread_mutex_unlock(&exclusao_do_governo);
+    /* A memória tocada por DMA sem sentença fica viva até o termo do processo. */
+    if (atomic_load_explicit(&servidor->posses_em_quarentena,
+                             memory_order_relaxed)) return -EIO;
     if (servidor->dispositivo != 0) {
         ublksrv_dev_deinit(servidor->dispositivo);
         servidor->dispositivo = 0;

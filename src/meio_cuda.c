@@ -11,6 +11,7 @@ struct conclusao_cuda {
     funcao_de_conclusao_do_meio concluir;
     void *argumento;
     CUevent evento;
+    uint64_t ordem;
     int erro;
     int pendente;
 };
@@ -479,6 +480,22 @@ static struct conclusao_cuda *achar_conclusao_cuda(
 }
 
 /*
+ * LEMMA DA ORDEM REPRESENTAVEL
+ * Proposito: reservar o próximo número sem confundir promessas vivas.
+ * Pre-condições: transportador pertence á fila corrente.
+ * Effeitos: reinicia a numeração somente quando nenhuma promessa subsiste.
+ * Retorno: zero ou -EOVERFLOW. Razão: a ordem jámais poderá ambiguar-se.
+ */
+static int preparar_ordem_da_promessa_cuda(
+    struct transportador_cuda *transportador)
+{
+    if (transportador->proxima_ordem != UINT64_MAX) return 0;
+    if (transportador->quantidade_pendente != 0) return -EOVERFLOW;
+    transportador->proxima_ordem = 0;
+    return 0;
+}
+
+/*
  * LEMMA DA PROMESSA MARCADA
  * Proposito: ligar a última submissão da corrente ao evento da etiqueta.
  * Pre-condições: DMA acceito, conclusão ociosa e corrente proprietária.
@@ -498,8 +515,10 @@ static int armar_promessa_cuda(
     }
     conclusao->concluir = concluir;
     conclusao->argumento = argumento;
+    conclusao->ordem = ++transportador->proxima_ordem;
     conclusao->erro = 0;
     conclusao->pendente = 1;
+    transportador->quantidade_pendente++;
     return 0;
 }
 
@@ -526,6 +545,8 @@ int submeter_leitura_ao_meio_cuda(
         !regiao_cuda_e_valida(transportador, deslocamento,
                               quantidade_de_bytes)) return -EINVAL;
     if (conclusao->pendente) return -EBUSY;
+    if (preparar_ordem_da_promessa_cuda(transportador) < 0)
+        return -EOVERFLOW;
     if (!escolher_contexto_cuda(transportador->meio) ||
         cuMemcpyDtoHAsync(destino, transportador->meio->memoria_da_gpu +
                                       deslocamento,
@@ -558,6 +579,8 @@ int submeter_escripta_ao_meio_cuda(
         !regiao_cuda_e_valida(transportador, deslocamento,
                               quantidade_de_bytes)) return -EINVAL;
     if (conclusao->pendente) return -EBUSY;
+    if (preparar_ordem_da_promessa_cuda(transportador) < 0)
+        return -EOVERFLOW;
     if (!escolher_contexto_cuda(transportador->meio) ||
         cuMemcpyHtoDAsync(transportador->meio->memoria_da_gpu + deslocamento,
                           origem, (size_t)quantidade_de_bytes,
@@ -589,12 +612,38 @@ int submeter_zeragem_ao_meio_cuda(
         !regiao_cuda_e_valida(transportador, deslocamento,
                               quantidade_de_bytes)) return -EINVAL;
     if (conclusao->pendente) return -EBUSY;
+    if (preparar_ordem_da_promessa_cuda(transportador) < 0)
+        return -EOVERFLOW;
     if (!escolher_contexto_cuda(transportador->meio) ||
         cuMemsetD8Async(transportador->meio->memoria_da_gpu + deslocamento,
                         0, (size_t)quantidade_de_bytes,
                         transportador->corrente) != CUDA_SUCCESS) return -EIO;
     return armar_promessa_cuda(
         conclusao, transportador, concluir, argumento);
+}
+
+/*
+ * LEMMA DA PROMESSA MAIS ANTIGA
+ * Proposito: escolher na fila a menor ordem ainda pendente.
+ * Pre-condições: fila pertencente ao contexto e ordens sem envolvimento.
+ * Effeitos: nenhum. Retorno: conclusão mais antiga ou nulo na ausência.
+ * Razão: duas etiquetas promptas conservam a ordem da corrente proprietária.
+ */
+static struct conclusao_cuda *achar_promessa_mais_antiga_cuda(
+    struct meio_assincrono_cuda *figura, int indice_da_fila)
+{
+    struct conclusao_cuda *mais_antiga = 0;
+    int etiqueta;
+
+    for (etiqueta = 0; etiqueta < figura->profundidade_das_filas;
+         etiqueta++) {
+        struct conclusao_cuda *conclusao = achar_conclusao_cuda(
+            figura, indice_da_fila, etiqueta);
+        if (conclusao->pendente &&
+            (mais_antiga == 0 || conclusao->ordem < mais_antiga->ordem))
+            mais_antiga = conclusao;
+    }
+    return mais_antiga;
 }
 
 /*
@@ -608,25 +657,25 @@ int submeter_zeragem_ao_meio_cuda(
 int colher_meio_cuda(void *contexto, int indice_da_fila, int orcamento)
 {
     struct meio_assincrono_cuda *figura = contexto;
-    int etiqueta;
+    struct transportador_cuda *transportador;
     int quantidade_colhida = 0;
 
     if (figura == 0 || indice_da_fila < 0 ||
         indice_da_fila >= figura->quantidade_de_filas || orcamento <= 0)
         return -EINVAL;
     if (!escolher_contexto_cuda(&figura->meio)) return -EIO;
-    for (etiqueta = 0; etiqueta < figura->profundidade_das_filas &&
-         quantidade_colhida < orcamento; etiqueta++) {
-        struct conclusao_cuda *conclusao = achar_conclusao_cuda(
-            figura, indice_da_fila, etiqueta);
+    transportador = achar_transportador_cuda(figura, indice_da_fila);
+    while (quantidade_colhida < orcamento) {
+        struct conclusao_cuda *conclusao = achar_promessa_mais_antiga_cuda(
+            figura, indice_da_fila);
         funcao_de_conclusao_do_meio concluir;
         CUresult consulta_do_evento;
         void *argumento;
         int erro;
 
-        if (!conclusao->pendente) continue;
+        if (conclusao == 0) break;
         consulta_do_evento = cuEventQuery(conclusao->evento);
-        if (consulta_do_evento == CUDA_ERROR_NOT_READY) continue;
+        if (consulta_do_evento == CUDA_ERROR_NOT_READY) break;
         concluir = conclusao->concluir;
         argumento = conclusao->argumento;
         erro = consulta_do_evento == CUDA_SUCCESS ? conclusao->erro : -EIO;
@@ -634,6 +683,7 @@ int colher_meio_cuda(void *contexto, int indice_da_fila, int orcamento)
         conclusao->argumento = 0;
         conclusao->erro = 0;
         conclusao->pendente = 0;
+        transportador->quantidade_pendente--;
         concluir(argumento, erro);
         quantidade_colhida++;
     }

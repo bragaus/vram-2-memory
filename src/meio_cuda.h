@@ -16,6 +16,8 @@ struct transportador_cuda {
     struct meio_cuda *meio;
     CUstream corrente;
     CUevent evento_de_aquecimento;
+    uint64_t proxima_ordem;
+    uint32_t quantidade_pendente;
 };
 /*
  * Proposito: escolher a GPU e reservar toda a VRAM antes da publicação.

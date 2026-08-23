@@ -22,6 +22,7 @@
 #include <ublksrv_utils.h>
 #include <unistd.h>
 
+struct incumbencia_da_fila_ublk;
 /* O servidor reune a configuração, o meio e as duas faces do dispositivo. */
 struct estado_do_servidor_ublk {
     const struct configuracao_do_apparelho *configuracao;
@@ -30,6 +31,7 @@ struct estado_do_servidor_ublk {
     struct ublksrv_ctrl_dev *controle;
     const struct ublksrv_dev *dispositivo;
     struct contadores_da_fila *contadores;
+    struct incumbencia_da_fila_ublk *incumbencias;
     struct reserva_de_buffers reserva_de_buffers;
     pthread_t fio_do_observatorio;
     atomic_int ordenar_termo_do_observatorio;
@@ -624,6 +626,10 @@ int desmontar_servidor_ublk(struct estado_do_servidor_ublk *servidor)
         servidor->operacoes_do_meio->destruir(servidor->contexto_do_meio);
         servidor->contexto_do_meio = 0;
     }
+    free(servidor->contadores);
+    servidor->contadores = 0;
+    free(servidor->incumbencias);
+    servidor->incumbencias = 0;
     if (servidor->memoria_fixada) {
         if (munlockall() != 0 && resultado == 0) resultado = -errno;
         servidor->memoria_fixada = 0;
@@ -668,6 +674,16 @@ int preparar_servidor_ublk(struct estado_do_servidor_ublk *servidor,
         return resultado;
     }
     servidor->memoria_fixada = 1;
+    servidor->incumbencias = calloc(
+        (size_t)configuracao->quantidade_de_filas,
+        sizeof(*servidor->incumbencias));
+    servidor->contadores = calloc(
+        (size_t)configuracao->quantidade_de_filas,
+        sizeof(*servidor->contadores));
+    if (servidor->incumbencias == 0 || servidor->contadores == 0) {
+        desmontar_servidor_ublk(servidor);
+        return -ENOMEM;
+    }
     resultado = servidor->operacoes_do_meio->preparar(
         &servidor->contexto_do_meio, configuracao);
     if (resultado < 0) {
@@ -714,7 +730,6 @@ int executar_servidor_com_meio(
     const struct configuracao_do_apparelho *configuracao, int empregar_cuda)
 {
     struct estado_do_servidor_ublk servidor = {0};
-    struct incumbencia_da_fila_ublk *incumbencias;
     uint32_t quantidade_iniciada = 0;
     int resultado;
     int resultado_do_desmonte;
@@ -722,25 +737,13 @@ int executar_servidor_com_meio(
     resultado = preparar_servidor_ublk(
         &servidor, configuracao, empregar_cuda);
     if (resultado < 0) return resultado;
-    incumbencias = calloc(
-        (size_t)configuracao->quantidade_de_filas, sizeof(*incumbencias));
-    servidor.contadores = calloc(
-        (size_t)configuracao->quantidade_de_filas, sizeof(*servidor.contadores));
-    if (incumbencias == 0 || servidor.contadores == 0) {
-        free(servidor.contadores);
-        free(incumbencias);
-        desmontar_servidor_ublk(&servidor);
-        return -ENOMEM;
-    }
     if (signal(SIGINT, ordenar_parada_do_servidor_ublk) == SIG_ERR ||
         signal(SIGTERM, ordenar_parada_do_servidor_ublk) == SIG_ERR) {
-        free(servidor.contadores);
-        free(incumbencias);
         desmontar_servidor_ublk(&servidor);
         return -errno;
     }
     resultado = iniciar_filas_ublk(
-        &servidor, incumbencias, &quantidade_iniciada);
+        &servidor, servidor.incumbencias, &quantidade_iniciada);
     if (resultado == 0) {
         resultado = ublksrv_ctrl_start_dev(servidor.controle, getpid());
     }
@@ -748,15 +751,13 @@ int executar_servidor_com_meio(
     if (resultado < 0) ublksrv_ctrl_stop_dev(servidor.controle);
     {
         int resultado_das_filas = recolher_filas_ublk(
-            incumbencias, quantidade_iniciada);
+            servidor.incumbencias, quantidade_iniciada);
         if (resultado == 0) resultado = resultado_das_filas;
     }
     {
         int resultado_do_observatorio = encerrar_observatorio_ublk(&servidor);
         if (resultado == 0) resultado = resultado_do_observatorio;
     }
-    free(incumbencias);
-    free(servidor.contadores);
     resultado_do_desmonte = desmontar_servidor_ublk(&servidor);
     if (resultado == 0) resultado = resultado_do_desmonte;
     return resultado;

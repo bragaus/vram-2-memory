@@ -320,9 +320,9 @@ PCIe ou capacidade da GPU. A experiência não formatou, montou nem activou
 
 O chamado #28 retirou a Runtime API. `cuInit` escolhe o `CUdevice`, o contexto
 primário é retido e assentado em cada fio, `cuMemAlloc` reserva a VRAM e uma
-`CUstream` não bloqueante pertence a cada fila. Os buffers fixados nascem de
-`cuMemHostAlloc`; leitura, escripta e zero empregam as cópias e a zeragem
-assíncronas da Driver API.
+`CUstream` não bloqueante pertence a cada fila. Naquela etapa, os buffers
+fixados ainda nasciam de `cuMemHostAlloc`; leitura, escripta e zero empregavam
+as cópias e a zeragem assíncronas da Driver API.
 
 Na RTX 3060 sob controlador 580.173.02 executaram-se:
 
@@ -347,3 +347,47 @@ e a VM ublk simulada tornou a fechar verde sem copiar `libcudart`.
 **Limite conhecido:** as submissões da Driver API ainda synchronizam a corrente
 antes de armar a conclusão. Eventos por etiqueta e progresso verdadeiramente
 assíncrono pertencem ao chamado #30. **Q.E.D.**
+
+## § XIX. DA MATERIA ANTERIOR AO APPARELHO
+
+O chamado #29 fez da geometria um contracto material. Antes de adquirir meio
+ou controle, o producto `filas × profundidade × maior operação` é calculado
+sem multiplicação transbordada e confrontado com `RLIMIT_MEMLOCK`. Sob limite
+artificial de 65536 octetos, a configuração de uma fila, profundidade dezasseis
+e operação de 1 MiB foi recusada com `-ENOMEM`, declarando
+`necessaria=16777216 limite=65536` e indicando `LimitMEMLOCK` ou `ulimit -l`.
+
+Incumbências, contadores, registros das filas e uma única reserva alinhada
+nascem antes do controle. No CUDA, a reserva inteira é fixada por
+`cuMemHostRegister`; os antigos caminhos de `cuMemHostAlloc` e de acquisição
+por etiqueta foram abolidos. A callback ublk apenas escolhe o quinhão
+determinístico de `(fila, etiqueta)`, e sua restituição individual nada possue.
+
+Cada trabalhador nasce sob `mlockall(MCL_CURRENT | MCL_FUTURE)`, vincula sua
+corrente e aquece seu buffer antes de responder ao portão da publicação. O
+aquecimento demonstra H→D, D→H, zeragem, `cuEventQuery`,
+`cuEventSynchronize` e nova consulta. Somente a unanimidade libera as filas
+exteriores para armarem seus pedidos e permitte ao dirigente ordenar
+`START_DEV`; recusa, interrupção ou falha de preparação cancella o conjunto.
+Depois dessa publicação, o código autoral não principia reserva alguma.
+
+Executaram-se:
+
+```text
+make provar
+make -B provar_cuda
+compute-sanitizer --tool memcheck --leak-check full \
+  ./construcao/provar_meio_cuda
+PKG_CONFIG_PATH=/home/bragaus/.local/ublk-stack/lib/pkgconfig \
+  make -B preparar_cuda
+DURACAO_DO_FIO_EM_SEGUNDOS=5 ./testes/provar_ublk_simulado_vm.sh
+```
+
+A RTX 3060 aqueceu duas filas sobre buffers pertencentes ao mesmo registro; o
+saneador declarou zero erros e zero octetos perdidos. A VM tornou a confrontar
+4 KiB, 64 KiB e 1 MiB com CRC32C, `err=0`, operação inválida recusada e
+restituição integral do único ublk creado.
+
+**Limite conhecido:** a prova ublk permanece simulada; a GPU foi demonstrada
+isoladamente, sem publicar bloco CUDA. O progresso sem synchronização da
+corrente e os eventos por etiqueta pertencem ao chamado #30. **Q.E.D.**

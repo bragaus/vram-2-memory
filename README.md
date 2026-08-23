@@ -45,9 +45,10 @@ ou escripta pela BAR; ReBAR, DAX, NUMA e FUSE não pertencem a esta demonstraç�
 ## § IV. DO ESTADO PRESENTE — onde repousa a penna
 
 A configuração, o meio simulado, as filas ublk e o caminho CUDA acham-se
-escriptos. O simulador, a passagem CUDA e um ublk efêmero de 256 MiB foram
-provados; o último nasceu sem formatação, montagem ou `swap` e foi removido no
-termo regular. Consulte-se `LIVRO_DA_OBRA.md` antes de confiar-lhe um octeto.
+provados. Uma RTX 3060 demonstrou a Driver API sob saneador; uma VM sem disco
+confrontou por cinco minutos um ublk simulado de 1 GiB e o removeu no termo,
+sem formatação, montagem ou `swap`. Consulte-se `LIVRO_DA_OBRA.md` antes de
+confiar-lhe um octeto.
 
 ## § V. DO OBSERVATORIO — comandos reservados á futura experiência
 
@@ -75,6 +76,13 @@ O primeiro zero é o índice da instância; as grandezas seguintes são capacida
 filas, profundidade, maior operação, prazo em millisegundos e GPU facultativa.
 Cada instância conserva `/run/vramdisk/<id>/control.sock` em modo `0660`, seu
 `pid` em `0640` e o directório em `0750`.
+
+Antes de abrir o controle ublk, o servidor mede `filas × profundidade × maior
+operação`, recusa transbordamento ou excedente de `RLIMIT_MEMLOCK` e declara a
+quantidade necessária, o limite observado e o remédio `LimitMEMLOCK` ou
+`ulimit -l`. Toda a reserva alinhada nasce então de uma só vez; no caminho CUDA
+ella é registrada integralmente. Cada fila demonstra ida, volta, zeragem e
+evento antes de consentir `START_DEV`.
 
 A antiga forma `vram-2-memory CAP FILAS PROF MAX PRAZO [GPU]` foi retirada. Sua
 migração explícita é iniciar `vramdiskd ID` e enviar os mesmos números por

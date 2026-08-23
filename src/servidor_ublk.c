@@ -546,6 +546,16 @@ int desmontar_servidor_ublk(struct estado_do_servidor_ublk *servidor)
         ublksrv_ctrl_deinit(servidor->controle);
         servidor->controle = 0;
     }
+    if (servidor->buffers_registrados) {
+        if (!desregistrar_memoria_intermediaria_cuda(
+                servidor->reserva_de_buffers.inicio)) {
+            if (resultado == 0) resultado = -EIO;
+        } else {
+            servidor->buffers_registrados = 0;
+        }
+    }
+    if (!servidor->buffers_registrados)
+        destruir_reserva_de_buffers(&servidor->reserva_de_buffers);
     if (servidor->operacoes_do_meio != 0 &&
         servidor->contexto_do_meio != 0) {
         servidor->operacoes_do_meio->destruir(servidor->contexto_do_meio);

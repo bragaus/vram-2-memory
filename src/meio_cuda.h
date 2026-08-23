@@ -52,22 +52,6 @@ int criar_transportador_cuda(struct transportador_cuda *transportador,
 int destruir_transportador_cuda(struct transportador_cuda *transportador);
 
 /*
- * Proposito: reservar memória CPU fixada para que DMA a possa atravessar.
- * Pre-condições: contexto CUDA corrente; quantidade positiva e alojável.
- * Effeitos: adquire CU_MEMHOSTALLOC_PORTABLE. Retorno: endereço ou nulo.
- * Razão: memória paginável não demonstra travessia assíncrona por DMA.
- */
-void *reservar_memoria_intermediaria_cuda(uint32_t quantidade_de_bytes);
-
-/*
- * Proposito: devolver a memória CPU fixada depois da última transferência.
- * Pre-condições: contexto corrente; endereço nasceu de cuMemHostAlloc ou nulo.
- * Effeitos: chama cuMemFreeHost. Retorno: unidade no êxito ou zero.
- * Razão: o nulo representa posse nenhuma e tem termo regular.
- */
-int destruir_memoria_intermediaria_cuda(void *memoria);
-
-/*
  * Proposito: fixar uma região alinhada já adquirida pelo plano autoral.
  * Pre-condições: contexto corrente, endereço vivo e quantidade positiva.
  * Effeitos: chama cuMemHostRegister. Retorno: unidade ou zero.
@@ -86,7 +70,7 @@ int desregistrar_memoria_intermediaria_cuda(void *memoria);
 
 /*
  * Proposito: copiar VRAM para memória CPU fixada pela corrente da fila.
- * Pre-condições: região contida e destino nascido de cuMemHostAlloc.
+ * Pre-condições: região contida e destino previamente registrado no CUDA.
  * Effeitos: submette DMA e espera sua conclusão. Retorno: unidade ou zero.
  * Razão: a espera antecede a conclusão que reutilizará a memória.
  */
@@ -96,7 +80,7 @@ int ler_meio_cuda(struct transportador_cuda *transportador,
 
 /*
  * Proposito: copiar memória CPU fixada para VRAM pela corrente da fila.
- * Pre-condições: região contida e origem nascida de cuMemHostAlloc.
+ * Pre-condições: região contida e origem previamente registrada no CUDA.
  * Effeitos: submette DMA e espera sua conclusão. Retorno: unidade ou zero.
  * Razão: a espera torna a conclusão do bloco posterior á transferência.
  */

@@ -183,41 +183,6 @@ int destruir_transportador_cuda(struct transportador_cuda *transportador)
 }
 
 /*
- * THEOREMA DA MEMORIA INTERMEDIARIA FIXA
- * Proposito: adquirir na CPU região que DMA possa alcançar directamente.
- * Pre-condições: contexto CUDA corrente e quantidade positiva.
- * Effeitos: chama cuMemHostAlloc com visibilidade entre contextos.
- * Retorno: endereço fixado no êxito ou nulo na recusa.
- * Razão: cópia assíncrona só prova DMA sem estágio para memória fixada.
- */
-void *reservar_memoria_intermediaria_cuda(uint32_t quantidade_de_bytes)
-{
-    void *memoria = 0;
-
-    if (quantidade_de_bytes == 0 ||
-        cuMemHostAlloc(&memoria, (size_t)quantidade_de_bytes,
-                       CU_MEMHOSTALLOC_PORTABLE) != CUDA_SUCCESS) {
-        return 0;
-    }
-    return memoria;
-}
-
-/*
- * COROLLARIO DA RESTITUICAO INTERMEDIARIA
- * Proposito: devolver á execução CUDA uma região CPU fixada.
- * Pre-condições: contexto corrente; endereço nasceu de cuMemHostAlloc ou nulo.
- * Effeitos: chama cuMemFreeHost. Retorno: unidade ou zero na recusa.
- * Razão: o nulo não representa posse e, portanto, já está restituído.
- */
-int destruir_memoria_intermediaria_cuda(void *memoria)
-{
-    if (memoria == 0) {
-        return 1;
-    }
-    return cuMemFreeHost(memoria) == CUDA_SUCCESS;
-}
-
-/*
  * THEOREMA DO REGISTRO FIXO EXPLICITO
  * Proposito: tornar apta para DMA uma região alinhada já possuída.
  * Pre-condições: contexto corrente, endereço vivo e quantidade positiva.

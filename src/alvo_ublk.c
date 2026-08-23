@@ -9,6 +9,27 @@
 #include <time.h>
 
 /*
+ * LEMMA DA SAUDE PUBLICADA
+ * Proposito: julgar a sentença do meio e publicar eventual ruína geral.
+ * Pre-condições: contexto ligado á saúde singular e á marca do servidor.
+ * Effeitos: conserva a série local; sela o servidor ao oitavo erro ou fatal.
+ * Retorno: resultado recebido, ou -EIO depois da sentença terminal.
+ * Razão: -ENODEV distingue a morte do contexto CUDA das recusas ordinárias.
+ */
+static int julgar_resultado_do_meio(struct contexto_da_fila_ublk *contexto,
+                                    int resultado)
+{
+    int terminal = registrar_resultado_na_saude_da_fila(
+        &contexto->saude, resultado, resultado == -ENODEV);
+
+    if (terminal <= 0) return resultado;
+    atomic_store_explicit(contexto->falha_terminal_do_servidor, 1,
+                          memory_order_relaxed);
+    contexto->resultado_assincrono = -EIO;
+    return -EIO;
+}
+
+/*
  * Proposito: entregar ao ublk a sentença colhida do evento da etiqueta.
  * Pre-condições: registro conserva contexto, origem e identidade vivos.
  * Effeitos: mede, conclue, rearma e registra a operação na própria fila.
@@ -25,7 +46,7 @@ static void concluir_transferencia_do_meio(void *argumento, int erro)
     uint64_t latencia = instante_final >=
         registro->instante_inicial_em_nanossegundos ?
         instante_final - registro->instante_inicial_em_nanossegundos : 0;
-    int resultado = erro;
+    int resultado = julgar_resultado_do_meio(contexto, erro);
     int resultado_da_entrega;
 
     if (resultado == 0 &&
@@ -158,7 +179,8 @@ int entregar_requisicao_ublk(struct contexto_da_fila_ublk *contexto,
             contexto->fila, etiqueta, resultado)) return -EIO;
     resultado_da_entrega = ublksrv_complete_io(
         fila_exterior, etiqueta, resultado);
-    if (resultado_da_entrega >= 0 &&
+    if (resultado_da_entrega >= 0 && !atomic_load_explicit(
+            contexto->falha_terminal_do_servidor, memory_order_relaxed) &&
         !rearmar_requisicao_na_fila(contexto->fila, etiqueta)) return -EIO;
     return resultado_da_entrega;
 }
@@ -189,6 +211,11 @@ int tratar_requisicao_ublk(const struct ublksrv_queue *fila_exterior,
     if (contexto == 0 || contexto->fila == 0 || dados->tag < 0 ||
         descritor->nr_sectors > UINT32_MAX / 512U ||
         descritor->start_sector > UINT64_MAX / 512U) return -EINVAL;
+    if (atomic_load_explicit(contexto->falha_terminal_do_servidor,
+                             memory_order_relaxed)) {
+        (void)ublksrv_complete_io(fila_exterior, (unsigned)dados->tag, -EIO);
+        return -EIO;
+    }
     quantidade = descritor->nr_sectors * 512U;
     deslocamento = descritor->start_sector * 512ULL;
     operacao = ublksrv_get_op(descritor);

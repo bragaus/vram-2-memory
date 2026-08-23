@@ -5,6 +5,7 @@
 #include "fila_de_requisicoes.h"
 #include "retrato_do_observatorio.h"
 
+#include <stdatomic.h>
 #include <ublksrv.h>
 
 /* A fila exterior encontra aqui o meio e o livro de suas etiquetas. */
@@ -15,6 +16,8 @@ struct contexto_da_fila_ublk {
     int indice_da_fila;
     struct contadores_da_fila *contadores;
     uint64_t prazo_em_nanossegundos;
+    struct saude_da_fila saude;
+    atomic_int *falha_terminal_do_servidor;
     int resultado_assincrono;
 };
 

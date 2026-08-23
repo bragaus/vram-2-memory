@@ -42,6 +42,7 @@ struct estado_do_servidor_ublk {
     struct reserva_de_buffers reserva_de_buffers;
     pthread_t fio_do_observatorio;
     atomic_int ordenar_termo_do_observatorio;
+    atomic_int falha_terminal;
     int observatorio_iniciado;
     int empregar_cuda;
     int buffers_registrados;
@@ -390,6 +391,8 @@ void *servir_fila_ublk(void *argumento)
     incumbencia->contexto.contexto_do_meio =
         incumbencia->servidor->contexto_do_meio;
     incumbencia->contexto.indice_da_fila = incumbencia->indice;
+    incumbencia->contexto.falha_terminal_do_servidor =
+        &incumbencia->servidor->falha_terminal;
     incumbencia->resultado = incumbencia->contexto.operacoes_do_meio
         ->vincular_fila(incumbencia->contexto.contexto_do_meio,
                        incumbencia->contexto.indice_da_fila);

@@ -1,10 +1,19 @@
 #include "../src/meio_cuda.h"
 #include "../src/reserva_de_buffers.h"
 
+#include <errno.h>
+
 /* Conserva quantas sentenças CUDA chegaram e qual foi a derradeira. */
 struct testemunho_da_conclusao_cuda {
     int quantidade;
     int erro;
+    int ordem[4];
+};
+
+/* Liga uma marca de etiqueta ao testemunho commum da experiência. */
+struct incumbencia_da_conclusao_cuda {
+    struct testemunho_da_conclusao_cuda *testemunho;
+    int marca;
 };
 
 /*
@@ -15,8 +24,12 @@ struct testemunho_da_conclusao_cuda {
  */
 void testemunhar_conclusao_cuda(void *argumento, int erro)
 {
-    struct testemunho_da_conclusao_cuda *testemunho = argumento;
+    struct incumbencia_da_conclusao_cuda *incumbencia = argumento;
+    struct testemunho_da_conclusao_cuda *testemunho =
+        incumbencia->testemunho;
 
+    if (testemunho->quantidade < 4)
+        testemunho->ordem[testemunho->quantidade] = incumbencia->marca;
     testemunho->quantidade++;
     testemunho->erro = erro;
 }
@@ -32,6 +45,8 @@ int provar_contrato_assincrono_cuda(void)
 {
     struct configuracao_do_apparelho configuracao = {0};
     struct testemunho_da_conclusao_cuda testemunho = {0};
+    struct incumbencia_da_conclusao_cuda primeira = {&testemunho, 1};
+    struct incumbencia_da_conclusao_cuda segunda = {&testemunho, 0};
     struct reserva_de_buffers reserva = {0};
     const struct operacoes_do_meio *operacoes = obter_operacoes_do_meio_cuda();
     unsigned char *memoria = 0;
@@ -47,7 +62,7 @@ int provar_contrato_assincrono_cuda(void)
     configuracao.profundidade_das_filas = 2;
     if (operacoes == 0 ||
         operacoes->preparar(&contexto, &configuracao) < 0 ||
-        criar_reserva_de_buffers(&reserva, 2, 1, 4096) < 0 ||
+        criar_reserva_de_buffers(&reserva, 2, 2, 4096) < 0 ||
         !registrar_memoria_intermediaria_cuda(
             reserva.inicio, (size_t)reserva.quantidade_em_bytes)) goto termo;
     memoria_registrada = 1;
@@ -57,15 +72,23 @@ int provar_contrato_assincrono_cuda(void)
             operacoes->aquecer_fila(
                 contexto, indice, memoria, 4096) < 0) goto termo;
     }
+    memoria = achar_buffer_reservado(&reserva, 1, 1, 4096);
     memoria[0] = 29;
-    if (operacoes->escrever(contexto, 1, 0, 0, memoria, 1,
-                            testemunhar_conclusao_cuda, &testemunho) < 0 ||
+    if (operacoes->escrever(contexto, 1, 1, 0, memoria, 1,
+                            testemunhar_conclusao_cuda, &primeira) < 0 ||
+        operacoes->zerar(contexto, 1, 0, 0, 1,
+                         testemunhar_conclusao_cuda, &segunda) < 0 ||
+        operacoes->escrever(contexto, 1, 1, 0, memoria, 1,
+                            testemunhar_conclusao_cuda, &primeira) != -EBUSY ||
         testemunho.quantidade != 0) goto termo;
-    while (testemunho.quantidade == 0 && tentativas < 1000000) {
-        if (operacoes->colher(contexto, 1, 1) < 0) goto termo;
+    while (testemunho.quantidade < 2 && tentativas < 1000000) {
+        if (operacoes->colher(contexto, 1, 2) < 0) goto termo;
         tentativas++;
     }
-    if (testemunho.quantidade != 1 || testemunho.erro != 0 ||
+    if (testemunho.quantidade != 2 || testemunho.erro != 0 ||
+        testemunho.ordem[0] != 1 || testemunho.ordem[1] != 0 ||
+        operacoes->escrever(contexto, 1, 2, 0, memoria, 1,
+                            testemunhar_conclusao_cuda, &primeira) >= 0 ||
         operacoes->colher(contexto, 1, 1) != 0) goto termo;
     resultado = 1;
 

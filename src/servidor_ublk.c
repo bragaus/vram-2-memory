@@ -32,6 +32,7 @@ struct estado_do_servidor_ublk {
     const struct ublksrv_dev *dispositivo;
     struct contadores_da_fila *contadores;
     struct incumbencia_da_fila_ublk *incumbencias;
+    int quantidade_de_filas_preparadas;
     struct reserva_de_buffers reserva_de_buffers;
     pthread_t fio_do_observatorio;
     atomic_int ordenar_termo_do_observatorio;
@@ -298,11 +299,6 @@ void *servir_fila_ublk(void *argumento)
     const struct ublksrv_queue *fila_exterior;
 
     incumbencia->resultado = -ENOMEM;
-    if (!criar_fila_de_requisicoes(
-            &incumbencia->fila,
-            incumbencia->servidor->configuracao->profundidade_das_filas)) {
-        return argumento;
-    }
     incumbencia->contexto.fila = &incumbencia->fila;
     incumbencia->contexto.contadores =
         &incumbencia->servidor->contadores[incumbencia->indice];
@@ -315,7 +311,6 @@ void *servir_fila_ublk(void *argumento)
         ->vincular_fila(incumbencia->contexto.contexto_do_meio,
                        incumbencia->contexto.indice_da_fila);
     if (incumbencia->resultado < 0) {
-        destruir_fila_de_requisicoes(&incumbencia->fila);
         return argumento;
     }
     incumbencia->contexto.prazo_em_nanossegundos =
@@ -325,7 +320,6 @@ void *servir_fila_ublk(void *argumento)
         incumbencia->servidor->dispositivo, incumbencia->indice,
         &incumbencia->contexto);
     if (fila_exterior == 0) {
-        destruir_fila_de_requisicoes(&incumbencia->fila);
         incumbencia->resultado = -ENODEV;
         return argumento;
     }
@@ -341,7 +335,6 @@ void *servir_fila_ublk(void *argumento)
         ublksrv_ctrl_stop_dev(incumbencia->servidor->controle);
     }
     ublksrv_queue_deinit(fila_exterior);
-    destruir_fila_de_requisicoes(&incumbencia->fila);
     return argumento;
 }
 
@@ -626,6 +619,12 @@ int desmontar_servidor_ublk(struct estado_do_servidor_ublk *servidor)
         servidor->operacoes_do_meio->destruir(servidor->contexto_do_meio);
         servidor->contexto_do_meio = 0;
     }
+    while (servidor->quantidade_de_filas_preparadas > 0) {
+        servidor->quantidade_de_filas_preparadas--;
+        destruir_fila_de_requisicoes(
+            &servidor->incumbencias[servidor->quantidade_de_filas_preparadas]
+                .fila);
+    }
     free(servidor->contadores);
     servidor->contadores = 0;
     free(servidor->incumbencias);
@@ -683,6 +682,17 @@ int preparar_servidor_ublk(struct estado_do_servidor_ublk *servidor,
     if (servidor->incumbencias == 0 || servidor->contadores == 0) {
         desmontar_servidor_ublk(servidor);
         return -ENOMEM;
+    }
+    while (servidor->quantidade_de_filas_preparadas <
+           configuracao->quantidade_de_filas) {
+        if (!criar_fila_de_requisicoes(
+                &servidor->incumbencias[
+                    servidor->quantidade_de_filas_preparadas].fila,
+                configuracao->profundidade_das_filas)) {
+            desmontar_servidor_ublk(servidor);
+            return -ENOMEM;
+        }
+        servidor->quantidade_de_filas_preparadas++;
     }
     resultado = servidor->operacoes_do_meio->preparar(
         &servidor->contexto_do_meio, configuracao);

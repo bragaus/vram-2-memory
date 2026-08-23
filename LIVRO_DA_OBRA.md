@@ -493,3 +493,11 @@ integral.
 portáteis injectam séries e instantes; não se matou o controlador GPU durante
 um bloco ublk real. A quarentena deliberada só é exercida quando já não há
 destruição segura, e não promette recuperar conteúdo. **Q.E.D.**
+
+## § XXII. DO PONTO DE REPOUSO
+
+Por ordem do Geometra, a obra repousa depois da conclusão integral do chamado
+#31. O primeiro chamado ainda pendente é o #32, destinado ao retrato JSON
+estável de configuração, filas, memória, erros e latências. Nenhuma linha do
+#32 foi principiada. Os artefactos não versionados sob `construcao/` são somente
+productos das provas acima e não pertencem á história Git. **Q.E.D.**

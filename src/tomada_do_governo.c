@@ -41,6 +41,7 @@ int formar_endereco_da_tomada(struct sockaddr_un *destino,
 int abrir_tomada_servidora_do_governo(const char *caminho)
 {
     struct sockaddr_un endereco;
+    mode_t mascara_anterior;
     int descritor;
     int resultado;
     int erro;
@@ -49,13 +50,16 @@ int abrir_tomada_servidora_do_governo(const char *caminho)
     if (resultado < 0) return resultado;
     descritor = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
     if (descritor < 0) return -errno;
+    mascara_anterior = umask(0117);
     if (bind(descritor, (const struct sockaddr *)&endereco,
              sizeof(endereco)) != 0) {
         erro = errno;
+        (void)umask(mascara_anterior);
         (void)close(descritor);
         return -erro;
     }
-    if (chmod(caminho, 0660) == 0 && listen(descritor, 8) == 0)
+    (void)umask(mascara_anterior);
+    if (listen(descritor, 8) == 0)
         return descritor;
     erro = errno;
     (void)close(descritor);

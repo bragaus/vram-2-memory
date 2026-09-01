@@ -6,6 +6,7 @@
 #include "ordens_da_instancia.h"
 
 #include <errno.h>
+#include <stdio.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -38,5 +39,29 @@ int atender_cliente_do_governo(int tomada_servidora,
         cliente, mensagem.cabecalho.operacao, resposta, quantidade);
     destruir_mensagem_de_governo(&mensagem);
     if (close(cliente) != 0 && resultado == 0) resultado = -errno;
+    return resultado;
+}
+
+/*
+ * COROLLARIO DAS AUDIENCIAS SUCCESSIVAS
+ * Proposito: conceder audiências até o máximo ou até a primeira negativa.
+ * Pre-condições: tomada em escuta e governo vivo; máximo zero não tem termo.
+ * Effeitos: regista no stderr cada audiência fallida. Retorno: último resultado.
+ * Razão: um só laço proprietário conhece a conta e o termo de toda audiência.
+ */
+int conceder_audiencias_do_governo(int tomada_servidora,
+                                   struct governo_do_apparelho *governo,
+                                   unsigned int maximo_de_audiencias)
+{
+    unsigned int audiencias = 0;
+    int resultado;
+
+    do {
+        resultado = atender_cliente_do_governo(tomada_servidora, governo);
+        audiencias++;
+        if (resultado < 0)
+            fprintf(stderr, "A audiência fallou: %d.\n", resultado);
+    } while (resultado == 0 && (maximo_de_audiencias == 0 ||
+             audiencias < maximo_de_audiencias));
     return resultado;
 }

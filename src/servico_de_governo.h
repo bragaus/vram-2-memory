@@ -16,7 +16,8 @@ int atender_cliente_do_governo(int tomada_servidora,
                                int *falha_irrecuperavel);
 
 /*
- * Proposito: conceder audiências successivas até o máximo ou primeira negativa.
+ * Proposito: conceder audiências até o máximo, ou até a primeira falha
+ *   irrecuperável (accept ou argumento); a falta do cliente é registada e segue.
  * Pre-condições: tomada servidora e governo vivos; máximo zero não tem termo.
  * Effeitos: atende clientes em série e regista cada falha no stderr.
  * Retorno: o resultado da última audiência concedida.

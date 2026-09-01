@@ -48,7 +48,8 @@ int atender_cliente_do_governo(int tomada_servidora,
 
 /*
  * COROLLARIO DAS AUDIENCIAS SUCCESSIVAS
- * Proposito: conceder audiências até o máximo ou até a primeira negativa.
+ * Proposito: conceder audiências até o máximo, ou até a primeira falha
+ *   irrecuperável (accept ou argumento); a falta do cliente é registada e segue.
  * Pre-condições: tomada em escuta e governo vivo; máximo zero não tem termo.
  * Effeitos: regista no stderr cada audiência fallida. Retorno: último resultado.
  * Razão: um só laço proprietário conhece a conta e o termo de toda audiência.

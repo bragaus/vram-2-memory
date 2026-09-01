@@ -114,7 +114,6 @@ int main(int quantidade_de_argumentos, char *argumentos[])
     struct instancia_do_servidor instancia;
     int resultado;
     int resultado_do_termo;
-    unsigned int audiencias = 0;
 
     resultado = ler_opcoes_do_servidor(
         &opcoes, quantidade_de_argumentos, argumentos);
@@ -136,14 +135,9 @@ int main(int quantidade_de_argumentos, char *argumentos[])
     printf("vramdiskd: tomada=%s pid=%s\n",
            instancia.morada.tomada, instancia.morada.processo);
     (void)fflush(stdout);
-    do {
-        resultado = atender_cliente_do_governo(
-            instancia.tomada_servidora, &instancia.governo);
-        audiencias++;
-        if (resultado < 0)
-            fprintf(stderr, "A audiência fallou: %d.\n", resultado);
-    } while (resultado == 0 && (opcoes.maximo_de_audiencias == 0 ||
-             audiencias < opcoes.maximo_de_audiencias));
+    resultado = conceder_audiencias_do_governo(
+        instancia.tomada_servidora, &instancia.governo,
+        opcoes.maximo_de_audiencias);
     resultado_do_termo = fechar_instancia_do_servidor(&instancia);
     if (resultado == 0) resultado = resultado_do_termo;
     return resultado == 0 ? EXIT_SUCCESS : EXIT_FAILURE;

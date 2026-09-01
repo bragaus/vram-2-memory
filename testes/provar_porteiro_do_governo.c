@@ -18,6 +18,7 @@ static void provar_corte_por_tempo(void)
     struct governo_do_apparelho governo;
     int servidor;
     int cliente;
+    int falha = 1;
 
     memset(&governo, 0, sizeof(governo));
     assert(mkdtemp(molde) != 0);
@@ -28,7 +29,8 @@ static void provar_corte_por_tempo(void)
     assert(cliente >= 0);
     assert(send(cliente, "GG", 2, 0) == 2);
     alarm(10);
-    assert(atender_cliente_do_governo(servidor, &governo) == 0);
+    assert(atender_cliente_do_governo(servidor, &governo, &falha) == 0);
+    assert(falha == 0);
     alarm(0);
     assert(close(cliente) == 0 && close(servidor) == 0);
     assert(restituir_tomada_do_governo(caminho) == 0);

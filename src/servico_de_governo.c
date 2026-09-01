@@ -31,6 +31,30 @@ static int atar_prazos_da_audiencia(int cliente)
 }
 
 /*
+ * A sentença pura da política: root ou o próprio dono do daemon governam.
+ */
+int credencial_do_governo_e_aceita(uid_t uid_do_par, uid_t uid_esperado)
+{
+    return uid_do_par == 0 || uid_do_par == uid_esperado;
+}
+
+/*
+ * Proposito: julgar a credencial do par ligado antes de qualquer ordem.
+ * Pre-condições: descritor de cliente ligado e local. Effeitos: nenhum.
+ * Retorno: 1 quando o par é aceito, 0 quando recusado ou insondável.
+ * Razão: sem provar o uid, o modo 0660 do grupo seria o único porteiro.
+ */
+static int par_do_governo_e_aceito(int cliente)
+{
+    struct ucred credencial;
+    socklen_t largura = sizeof(credencial);
+
+    if (getsockopt(cliente, SOL_SOCKET, SO_PEERCRED, &credencial, &largura) != 0)
+        return 0;
+    return credencial_do_governo_e_aceita(credencial.uid, geteuid());
+}
+
+/*
  * THEOREMA DA AUDIENCIA SINGULAR
  * Proposito: receber e responder exactamente uma mensagem de um cliente.
  * Pre-condições: tomada em escuta e governo preparado.
@@ -52,6 +76,10 @@ int atender_cliente_do_governo(int tomada_servidora,
         cliente = accept4(tomada_servidora, 0, 0, SOCK_CLOEXEC);
     } while (cliente < 0 && errno == EINTR);
     if (cliente < 0) return -errno;
+    if (!par_do_governo_e_aceito(cliente)) {
+        (void)close(cliente);
+        return 0;
+    }
     resultado = atar_prazos_da_audiencia(cliente);
     if (resultado == 0)
         resultado = receber_mensagem_de_governo(cliente, &mensagem);

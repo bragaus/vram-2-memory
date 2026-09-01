@@ -143,6 +143,33 @@ limpar_molde:
 }
 
 /*
+ * Proposito: provar que a falha interna do accept encerra o laço.
+ * Pre-condições: socketpair disponível. Effeitos: funda e restitue um governo.
+ * Retorno: unidade quando o laço encerra com negativo, sem giro sem fim.
+ * Razão: só a falha interna termina o laço; uma tomada não-escuta é uma delas.
+ */
+int provar_termo_interno_do_servico(void)
+{
+    struct governo_do_apparelho governo;
+    int par[2] = {-1, -1};
+    int resultado;
+    int ok;
+
+    if (preparar_governo_do_apparelho(&governo, servir_prova_do_servico,
+            terminar_prova_do_servico, 0) != 0) return 0;
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, par) != 0) {
+        (void)encerrar_governo_do_apparelho(&governo);
+        return 0;
+    }
+    resultado = conceder_audiencias_do_governo(par[0], &governo, 0);
+    ok = (resultado < 0);
+    close(par[0]);
+    close(par[1]);
+    (void)encerrar_governo_do_apparelho(&governo);
+    return ok;
+}
+
+/*
  * Proposito: reunir as demonstrações do serviço de governo sob um alarme.
  * Pre-condições: nenhuma tomada nomeada exterior é necessária.
  * Effeitos: o alarme converte qualquer travamento em falha visível.
@@ -152,5 +179,6 @@ limpar_molde:
 int main(void)
 {
     alarm(15);
-    return provar_sobrevivencia_do_servico() ? 0 : 1;
+    return provar_sobrevivencia_do_servico() &&
+           provar_termo_interno_do_servico() ? 0 : 1;
 }

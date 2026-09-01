@@ -13,13 +13,15 @@
 /*
  * THEOREMA DA AUDIENCIA SINGULAR
  * Proposito: receber e responder exactamente uma mensagem de um cliente.
- * Pre-condições: tomada em escuta e governo preparado.
- * Effeitos: adquire e restitue ligação e carga transitórias.
+ * Pre-condições: tomada em escuta, governo preparado e falha_irrecuperavel vivo.
+ * Effeitos: adquire e restitue ligação e carga transitórias; publica em
+ *   falha_irrecuperavel se o termo negativo foi interno (accept) ou do cliente.
  * Retorno: zero no percurso ou primeiro erro negativo.
- * Razão: a fronteira de uma mensagem impede posse indefinida pelo cliente.
+ * Razão: só a falha do accept é interna; a falta do cliente não encerra o laço.
  */
 int atender_cliente_do_governo(int tomada_servidora,
-                               struct governo_do_apparelho *governo)
+                               struct governo_do_apparelho *governo,
+                               int *falha_irrecuperavel)
 {
     struct mensagem_de_governo mensagem = {0};
     unsigned char resposta[256];
@@ -27,11 +29,13 @@ int atender_cliente_do_governo(int tomada_servidora,
     int cliente;
     int resultado;
 
+    if (falha_irrecuperavel != 0) *falha_irrecuperavel = 1;
     if (tomada_servidora < 0 || governo == 0) return -EINVAL;
     do {
         cliente = accept4(tomada_servidora, 0, 0, SOCK_CLOEXEC);
     } while (cliente < 0 && errno == EINTR);
     if (cliente < 0) return -errno;
+    if (falha_irrecuperavel != 0) *falha_irrecuperavel = 0;
     resultado = receber_mensagem_de_governo(cliente, &mensagem);
     if (resultado == 0) resultado = cumprir_ordem_da_instancia(
         governo, &mensagem, resposta, sizeof(resposta), &quantidade);
@@ -55,13 +59,15 @@ int conceder_audiencias_do_governo(int tomada_servidora,
 {
     unsigned int audiencias = 0;
     int resultado;
+    int falha_irrecuperavel = 0;
 
     do {
-        resultado = atender_cliente_do_governo(tomada_servidora, governo);
+        resultado = atender_cliente_do_governo(
+            tomada_servidora, governo, &falha_irrecuperavel);
         audiencias++;
         if (resultado < 0)
             fprintf(stderr, "A audiência fallou: %d.\n", resultado);
-    } while (resultado == 0 && (maximo_de_audiencias == 0 ||
+    } while (!falha_irrecuperavel && (maximo_de_audiencias == 0 ||
              audiencias < maximo_de_audiencias));
     return resultado;
 }

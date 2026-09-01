@@ -5,13 +5,15 @@
 
 /*
  * Proposito: aceitar, julgar, cumprir e responder um único cliente local.
- * Pre-condições: tomada servidora e governo vivos.
- * Effeitos: possue uma ligação durante exactamente uma mensagem e resposta.
+ * Pre-condições: tomada servidora, governo e falha_irrecuperavel vivos.
+ * Effeitos: possue uma ligação durante exactamente uma mensagem e resposta;
+ *   publica em falha_irrecuperavel se o termo foi interno (accept) ou do cliente.
  * Retorno: zero no percurso ou erro negativo do protocolo ou systema.
- * Razão: cada accept delimita integralmente a posse transitória do cliente.
+ * Razão: só a falha do accept encerra; a falta do cliente é registada e segue.
  */
 int atender_cliente_do_governo(int tomada_servidora,
-                               struct governo_do_apparelho *governo);
+                               struct governo_do_apparelho *governo,
+                               int *falha_irrecuperavel);
 
 /*
  * Proposito: conceder audiências successivas até o máximo ou primeira negativa.
